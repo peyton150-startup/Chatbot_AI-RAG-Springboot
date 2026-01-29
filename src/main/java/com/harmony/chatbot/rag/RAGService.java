@@ -1,9 +1,11 @@
 package com.harmony.chatbot.rag;
 
-import com.theokanning.openai.embedding.Embedding;
+import com.theokanning.openai.service.OpenAiService;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.embedding.EmbeddingResult;
-import com.theokanning.openai.service.OpenAiService;
+import com.theokanning.openai.completion.chat.ChatMessage;
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatCompletionResult;
 import com.theokanning.openai.completion.chat.*;
 
 import org.springframework.stereotype.Service;
