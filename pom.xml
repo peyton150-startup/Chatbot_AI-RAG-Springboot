@@ -39,11 +39,25 @@
         </dependency>
 
         <!-- GPT-3 Java client -->
-        <dependency>
-            <groupId>com.theokanning.openai-gpt3-java</groupId>
-            <artifactId>client</artifactId>
-            <version>0.10.0</version>
-        </dependency>
+       <!-- OpenAI GPT-3 Java -->
+<dependency>
+    <groupId>com.theokanning.openai-gpt3-java</groupId>
+    <artifactId>api</artifactId>
+    <version>0.18.2</version>
+</dependency>
+
+<dependency>
+    <groupId>com.theokanning.openai-gpt3-java</groupId>
+    <artifactId>service</artifactId>
+    <version>0.18.2</version>
+</dependency>
+
+<dependency>
+    <groupId>com.theokanning.openai-gpt3-java</groupId>
+    <artifactId>client</artifactId>
+    <version>0.18.2</version>
+</dependency>
+
 
         <!-- OkHttp HTTP client -->
         <dependency>
