@@ -1,40 +1,34 @@
 package com.harmony.chatbot.rag;
 
 import com.theokanning.openai.OpenAiService;
+import com.theokanning.openai.embedding.Embedding;
 import com.theokanning.openai.embedding.EmbeddingRequest;
-import com.theokanning.openai.embedding.EmbeddingResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class RAGService {
 
     private final OpenAiService service;
-    private final List<String> documents = new ArrayList<>();
 
-    public RAGService(String openaiKey) {
-        this.service = new OpenAiService(openaiKey);
+    public RAGService(@Value("${openai.api.key}") String apiKey) {
+        this.service = new OpenAiService(apiKey);
     }
 
-    public void addDocument(String question, String answer) {
-        documents.add(question + " " + answer);
-    }
-
-    public String query(String question) {
-        for (String doc : documents) {
-            if (doc.toLowerCase().contains(question.toLowerCase())) {
-                return doc;
-            }
-        }
-        return "No answer found.";
-    }
-
-    // Optional: create embeddings if needed
-    public EmbeddingResponse createEmbedding(String text) {
+    /**
+     * Create embeddings for a given text.
+     * @param text the input text
+     * @return a List<Double> vector
+     */
+    public List<Double> createEmbedding(String text) {
         EmbeddingRequest request = EmbeddingRequest.builder()
                 .input(text)
                 .model("text-embedding-3-small")
                 .build();
-        return service.createEmbeddings(request).getData().get(0);
+
+        List<Embedding> response = service.createEmbeddings(request).getData();
+        return response.get(0).getEmbedding(); // return first embedding
     }
 }
