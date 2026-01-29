@@ -3,29 +3,23 @@ package com.harmony.chatbot.rag;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.env.Environment;
+
+import java.util.List;
 
 @SpringBootApplication
 public class RAGTest {
 
     public static void main(String[] args) {
-        // Start Spring Boot application context
         ApplicationContext context = SpringApplication.run(RAGTest.class, args);
 
-        // Read OpenAI key from application.properties
-        Environment env = context.getEnvironment();
-        String openaiKey = env.getProperty("openai.api.key");
+        RAGService ragService = context.getBean(RAGService.class);
 
-        // Initialize RAGService with the key
-        RAGService ragService = new RAGService(openaiKey);
+        String sampleText1 = "Who can perform Botox?";
+        List<Double> embedding1 = ragService.createEmbedding(sampleText1);
+        System.out.println("Embedding size for first question: " + embedding1.size());
 
-        // Add some sample documents
-        ragService.addDocument("Who can perform Botox?", "Harmonya Aesthetics provides Botox and filler services.");
-        ragService.addDocument("How do I book an appointment?", "Appointments can be booked online or via phone.");
-
-        // Query example
-        String response = ragService.query("Who can perform Botox?");
-        System.out.println("Q: Who can perform Botox?");
-        System.out.println("A: " + response);
+        String sampleText2 = "How do I book an appointment?";
+        List<Double> embedding2 = ragService.createEmbedding(sampleText2);
+        System.out.println("Embedding size for second question: " + embedding2.size());
     }
 }
