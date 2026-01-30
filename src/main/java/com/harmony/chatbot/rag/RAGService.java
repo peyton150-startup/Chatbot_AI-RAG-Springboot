@@ -62,6 +62,8 @@ public class RAGService {
                     .model("gpt-4o-mini")
                     .messages(List.of(system, user))
                     .build();
+System.out.println("Question embedding: " + Arrays.toString(qVector));
+System.out.println("Most relevant page: " + page.getText());
 
             return service.createChatCompletion(request)
                     .getChoices().get(0)
