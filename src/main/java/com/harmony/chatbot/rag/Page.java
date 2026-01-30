@@ -1,5 +1,8 @@
 package com.harmony.chatbot.rag;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Page {
     private String id;
     private String slug;
