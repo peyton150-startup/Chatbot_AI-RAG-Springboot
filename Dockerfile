@@ -11,7 +11,8 @@ RUN mvn clean package -DskipTests -X
 # Runtime image
 FROM eclipse-temurin:17-jre
 WORKDIR /app
-COPY --from=build /app/target/chatbot-0.0.1-SNAPSHOT.jar ./chatbot.jar
+COPY --from=build /app/target/chatbot-*.jar ./chatbot.jar
+
 
 EXPOSE 10000
 ENV OPENAI_API_KEY=""
