@@ -29,7 +29,10 @@ public class RAGService {
 
         // Precompute embeddings
         embeddings = new ArrayList<>();
-        for (String doc : docs) {
+        System.out.println("=== RAGService: Loading embeddings for " + docs.size() + " docs ===");
+        for (int i = 0; i < docs.size(); i++) {
+            String doc = docs.get(i);
+            System.out.println("Embedding doc " + i + ": " + doc.substring(0, Math.min(50, doc.length())) + "...");
             EmbeddingResponse resp = service.createEmbeddings(
                 EmbeddingRequest.builder()
                     .model("text-embedding-3-large")
@@ -38,9 +41,12 @@ public class RAGService {
             );
             embeddings.add(resp.getData().get(0).getEmbedding());
         }
+        System.out.println("=== Finished loading embeddings ===");
     }
 
     public String getAnswer(String question) {
+        System.out.println("\n=== New question received: " + question + " ===");
+
         // Get embedding for user question
         EmbeddingResponse qEmb = service.createEmbeddings(
             EmbeddingRequest.builder()
@@ -50,18 +56,28 @@ public class RAGService {
         );
         List<Double> qVector = qEmb.getData().get(0).getEmbedding();
 
+        System.out.print("User embedding (first 10 dims): ");
+        for (int i = 0; i < 10; i++) System.out.print(qVector.get(i) + ", ");
+        System.out.println();
+
         // Find the closest doc
         double bestScore = -1;
         String bestDoc = null;
         for (int i = 0; i < docs.size(); i++) {
             double sim = cosineSimilarity(qVector, embeddings.get(i));
+            System.out.println("Similarity to doc " + i + ": " + sim);
             if (sim > bestScore) {
                 bestScore = sim;
                 bestDoc = docs.get(i);
             }
         }
 
-        if (bestDoc == null) return "I don’t have that information.";
+        if (bestDoc == null) {
+            System.out.println("No relevant chunks found.");
+            return "I don’t have that information in my knowledge base.";
+        }
+
+        System.out.println("Top doc chosen (score " + bestScore + "): " + bestDoc.substring(0, Math.min(100, bestDoc.length())) + "...");
 
         // Send to GPT with context
         ChatMessage system = new ChatMessage("system", "Answer only using the following context: " + bestDoc);
@@ -72,8 +88,10 @@ public class RAGService {
                 .messages(List.of(system, user))
                 .build();
 
-        return service.createChatCompletion(request)
-                      .getChoices().get(0).getMessage().getContent();
+        String answer = service.createChatCompletion(request)
+                               .getChoices().get(0).getMessage().getContent();
+        System.out.println("GPT Answer: " + answer);
+        return answer;
     }
 
     private double cosineSimilarity(List<Double> a, List<Double> b) {
