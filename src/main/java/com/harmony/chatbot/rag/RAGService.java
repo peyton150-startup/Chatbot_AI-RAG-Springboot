@@ -1,8 +1,9 @@
 package com.harmony.chatbot.rag;
 
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatCompletionResult;
+import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.service.OpenAiService;
-import com.theokanning.openai.completion.chat.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -11,37 +12,36 @@ import java.util.List;
 @Service
 public class RAGService {
 
-    private final OpenAiService openAiService;
+    private final OpenAiService openAi;
 
-    // Inject API key from Render / application.properties
-    public RAGService(@Value("${openai.api.key}") String apiKey) {
-        this.openAiService = new OpenAiService(apiKey, Duration.ofSeconds(60));
+    public RAGService() {
+        String apiKey = System.getenv("OPENAI_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("OPENAI_API_KEY is not set");
+        }
+
+        this.openAi = new OpenAiService(apiKey, Duration.ofSeconds(60));
     }
 
     /**
-     * This is GROUNDED generation.
-     * If the model answers outside this context, RAG is broken.
+     * Main RAG entry point
      */
     public String ask(String question) {
 
-        // 🔒 Your "knowledge base" (replace later with vector search results)
+        // 🔒 HARD-CODED CONTEXT (replace later with vectors)
         String context = """
-                Company Information:
-                - Company name: Harmony AI
-                - Office location: 742 Evergreen Terrace, Springfield
-                - Support email: support@harmony.ai
+                Harmony Aesthetics is located at 123 Main Street, Austin, Texas.
+                The office offers Botox, fillers, and skincare treatments.
+                Appointments can be booked online or by phone.
                 """;
+
+        System.out.println("🔥 RAG HIT: " + question);
 
         ChatMessage system = new ChatMessage(
                 "system",
-                """
-                You are a company assistant.
-                Use ONLY the provided context to answer.
-                If the answer is not in the context, say:
-                "I don’t have that information."
-                
-                Context:
-                """ + context
+                "You are a retrieval-based assistant. Answer ONLY using the provided context. " +
+                "If the answer is not in the context, reply exactly: NOT IN CONTEXT.\n\n" +
+                "CONTEXT:\n" + context
         );
 
         ChatMessage user = new ChatMessage("user", question);
@@ -52,10 +52,8 @@ public class RAGService {
                 .temperature(0.0)
                 .build();
 
-        ChatCompletionResult result = openAiService.createChatCompletion(request);
+        ChatCompletionResult result = openAi.createChatCompletion(request);
 
-        return result.getChoices().get(0).getMessage().getContent();
+        return result.getChoices().get(0).getMessage().getContent().trim();
     }
-    System.out.println("🔥 RAG HIT: " + question);
-
 }
