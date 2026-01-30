@@ -10,7 +10,7 @@ public class RAGController {
     @Autowired
     private RAGService ragService;
 
-    @PostMapping
+    @PostMapping("/api/rag-chat")
     public String chat(@RequestBody String question) {
         return ragService.getAnswer(question);
     }
