@@ -53,6 +53,7 @@ public class RAGService {
                 .build();
 
         ChatCompletionResult result = openAi.createChatCompletion(request);
+System.out.println("Loaded page: " + page.getSlug());
 
         return result.getChoices().get(0).getMessage().getContent().trim();
     }
