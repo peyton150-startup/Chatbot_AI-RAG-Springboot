@@ -1,8 +1,8 @@
 package com.harmony.chatbot.rag;
 
 import com.theokanning.openai.OpenAiService;
-import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.embedding.Embedding;
+import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import org.springframework.stereotype.Service;
@@ -32,11 +32,12 @@ public class RAGService {
         embeddings = new ArrayList<>();
         for (String doc : docs) {
             List<Embedding> resp = service.createEmbeddings(
-                    EmbeddingRequest.builder()
-                            .model("text-embedding-3-large")
-                            .input(List.of(doc))
-                            .build()
+                EmbeddingRequest.builder()
+                        .model("text-embedding-3-large")
+                        .input(List.of(doc))
+                        .build()
             ).getData();
+
             embeddings.add(resp.get(0).getEmbedding());
         }
     }
@@ -44,11 +45,12 @@ public class RAGService {
     public String getAnswer(String question) {
         // Get embedding for user question
         List<Embedding> qEmb = service.createEmbeddings(
-                EmbeddingRequest.builder()
-                        .model("text-embedding-3-large")
-                        .input(List.of(question))
-                        .build()
+            EmbeddingRequest.builder()
+                    .model("text-embedding-3-large")
+                    .input(List.of(question))
+                    .build()
         ).getData();
+
         List<Double> qVector = qEmb.get(0).getEmbedding();
 
         // Find the closest doc
@@ -74,7 +76,9 @@ public class RAGService {
                 .build();
 
         return service.createChatCompletion(request)
-                      .getChoices().get(0).getMessage().getContent();
+                      .getChoices().get(0)
+                      .getMessage()
+                      .getContent();
     }
 
     private double cosineSimilarity(List<Double> a, List<Double> b) {
