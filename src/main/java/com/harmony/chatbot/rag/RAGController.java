@@ -1,20 +1,17 @@
 package com.harmony.chatbot.rag;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/chat")
-@CrossOrigin
 public class RAGController {
 
-    private final RAGService ragService;
+    @Autowired
+    private RAGService ragService;
 
-    public RAGController(RAGService ragService) {
-        this.ragService = ragService;
-    }
-
-    @PostMapping(consumes = "text/plain", produces = "text/plain")
+    @PostMapping
     public String chat(@RequestBody String question) {
-        return ragService.ask(question);
+        return ragService.getAnswer(question);
     }
 }
