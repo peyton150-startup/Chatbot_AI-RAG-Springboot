@@ -1,3 +1,12 @@
+package com.harmony.chatbot;
+
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.harmony.chatbot.rag.RAGService;
+
 @RestController
 @RequestMapping("/api")
 public class ChatController {
@@ -9,13 +18,7 @@ public class ChatController {
     }
 
     @PostMapping("/chat")
-    public String chat(@RequestBody String question) {
-        System.out.println("=== /chat called ===");
-        System.out.println("Question received: " + question);
-
-        String answer = ragService.getAnswer(question);
-
-        System.out.println("Answer returned: " + answer);
-        return answer;
+    public String chat(@RequestBody String message) {
+        return ragService.getAnswer(message);
     }
 }
