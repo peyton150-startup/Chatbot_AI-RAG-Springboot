@@ -56,4 +56,6 @@ public class RAGService {
 
         return result.getChoices().get(0).getMessage().getContent();
     }
+    System.out.println("🔥 RAG HIT: " + question);
+
 }
