@@ -1,11 +1,7 @@
 package com.harmony.chatbot;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
 import com.harmony.chatbot.rag.RAGService;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -18,7 +14,7 @@ public class ChatController {
     }
 
     @PostMapping("/chat")
-    public String chat(@RequestBody String message) {
-        return ragService.getAnswer(message);
+    public String chat(@RequestBody String question) {
+        return ragService.getAnswer(question);
     }
 }
