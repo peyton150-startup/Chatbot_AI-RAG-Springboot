@@ -1,18 +1,21 @@
-package com.harmony.chatbot;
-
-import org.springframework.web.bind.annotation.*;
-
 @RestController
-public class ChatbotController {
+@RequestMapping("/api")
+public class ChatController {
 
-    private final OpenAIService openAIService;
+    private final RAGService ragService;
 
-    public ChatbotController(OpenAIService openAIService) {
-        this.openAIService = openAIService;
+    public ChatController(RAGService ragService) {
+        this.ragService = ragService;
     }
 
     @PostMapping("/chat")
-    public String chat(@RequestBody String message) {
-        return openAIService.askGPT(message);
+    public String chat(@RequestBody String question) {
+        System.out.println("=== /chat called ===");
+        System.out.println("Question received: " + question);
+
+        String answer = ragService.getAnswer(question);
+
+        System.out.println("Answer returned: " + answer);
+        return answer;
     }
 }
