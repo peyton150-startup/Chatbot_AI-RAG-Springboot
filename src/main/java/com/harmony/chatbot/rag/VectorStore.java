@@ -1,35 +1,24 @@
 package com.harmony.chatbot.rag;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class VectorStore {
 
-    private List<Page> pages;
+    private final List<Page> pages;
 
-    public VectorStore(String pagesFile) {
-        loadPages(pagesFile);
-    }
-
-    private void loadPages(String pagesFile) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            pages = objectMapper.readValue(
-                    new File(pagesFile),
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, Page.class)
-            );
-            System.out.println("Loaded " + pages.size() + " pages.");
-        } catch (IOException e) {
-            e.printStackTrace();
-            pages = new ArrayList<>();
+    // New constructor: accept pages array directly
+    public VectorStore(Page[] pagesArray) {
+        if (pagesArray != null) {
+            this.pages = new ArrayList<>(Arrays.asList(pagesArray));
+        } else {
+            this.pages = new ArrayList<>();
         }
     }
 
     public Page getMostRelevantPage(double[] queryEmbedding) {
-        if (pages.isEmpty() || queryEmbedding.length == 0) return null;
+        if (pages.isEmpty() || queryEmbedding == null || queryEmbedding.length == 0) return null;
 
         Page bestPage = null;
         double bestScore = -1;
@@ -54,5 +43,7 @@ public class VectorStore {
         return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-10);
     }
 
-    public List<Page> getPages() { return pages; }
+    public List<Page> getPages() {
+        return pages;
+    }
 }
