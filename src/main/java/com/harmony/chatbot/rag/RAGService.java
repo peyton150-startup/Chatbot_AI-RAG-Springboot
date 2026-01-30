@@ -10,7 +10,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -54,9 +53,9 @@ public class RAGService {
             Page page = vectorStore.getMostRelevantPage(qVector);
             if (page == null) return "I don’t have that information.";
 
-            // Send context + user question to GPT
+            // Send context + user question to GPT using text from JSON
             ChatMessage system = new ChatMessage("system",
-                    "Answer only using the following context: " + page.getContent());
+                    "Answer only using the following context: " + page.getText());
             ChatMessage user = new ChatMessage("user", question);
 
             ChatCompletionRequest request = ChatCompletionRequest.builder()
