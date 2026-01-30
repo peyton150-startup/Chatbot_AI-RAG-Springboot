@@ -5,12 +5,17 @@ import org.springframework.stereotype.Service;
 import com.theokanning.openai.OpenAiService;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.embedding.EmbeddingResponse;
-import com.theokanning.openai.completion.chat.*;
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatMessage;
 
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class RAGService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RAGService.class);
 
     private final OpenAiService service;
     private final List<String> docs;
@@ -19,20 +24,16 @@ public class RAGService {
     public RAGService() {
         this.service = new OpenAiService(System.getenv("OPENAI_API_KEY"));
 
-        // Example pages (split content into chunks)
+        // Example pages split into chunks
         docs = List.of(
-            "Harmony Aesthetics & Wellness is a trusted medical spa located in Kensington, Maryland and Falls Church, Virginia...",
-            "The Kensington office hours are Monday through Friday from 9:00 am to 5:00 pm...",
-            "The practice is run by Dr. Mario Ortega with board-certified NP Angelica and esthetician Alonnie...",
+            "Harmony Aesthetics & Wellness is a trusted medical spa located in Kensington, Maryland and Falls Church, Virginia, dedicated to helping clients look and feel their best through advanced aesthetic and wellness treatments.",
+            "The Kensington office hours are Monday through Friday from 9:00 am to 5:00 pm, Saturday from 9:00 am to 3:00 pm by appointment only.",
+            "The practice is run by Dr. Mario Ortega with board-certified NP Angelica and esthetician Alonnie.",
             "For appointments or questions, call or text (240) 280-0020 or book online at harmonyaestheticsandwellness.glossgenius.com."
         );
 
-        // Precompute embeddings
         embeddings = new ArrayList<>();
-        System.out.println("=== RAGService: Loading embeddings for " + docs.size() + " docs ===");
-        for (int i = 0; i < docs.size(); i++) {
-            String doc = docs.get(i);
-            System.out.println("Embedding doc " + i + ": " + doc.substring(0, Math.min(50, doc.length())) + "...");
+        for (String doc : docs) {
             EmbeddingResponse resp = service.createEmbeddings(
                 EmbeddingRequest.builder()
                     .model("text-embedding-3-large")
@@ -40,14 +41,13 @@ public class RAGService {
                     .build()
             );
             embeddings.add(resp.getData().get(0).getEmbedding());
+            logger.info("Generated embedding for doc: {}", doc.substring(0, Math.min(50, doc.length())) + "...");
         }
-        System.out.println("=== Finished loading embeddings ===");
     }
 
     public String getAnswer(String question) {
-        System.out.println("\n=== New question received: " + question + " ===");
+        logger.info("Received question: {}", question);
 
-        // Get embedding for user question
         EmbeddingResponse qEmb = service.createEmbeddings(
             EmbeddingRequest.builder()
                 .model("text-embedding-3-large")
@@ -56,30 +56,19 @@ public class RAGService {
         );
         List<Double> qVector = qEmb.getData().get(0).getEmbedding();
 
-        System.out.print("User embedding (first 10 dims): ");
-        for (int i = 0; i < 10; i++) System.out.print(qVector.get(i) + ", ");
-        System.out.println();
-
-        // Find the closest doc
         double bestScore = -1;
         String bestDoc = null;
         for (int i = 0; i < docs.size(); i++) {
             double sim = cosineSimilarity(qVector, embeddings.get(i));
-            System.out.println("Similarity to doc " + i + ": " + sim);
+            logger.info("Similarity with doc {}: {}", i, sim);
             if (sim > bestScore) {
                 bestScore = sim;
                 bestDoc = docs.get(i);
             }
         }
 
-        if (bestDoc == null) {
-            System.out.println("No relevant chunks found.");
-            return "I don’t have that information in my knowledge base.";
-        }
+        if (bestDoc == null) return "I don’t have that information.";
 
-        System.out.println("Top doc chosen (score " + bestScore + "): " + bestDoc.substring(0, Math.min(100, bestDoc.length())) + "...");
-
-        // Send to GPT with context
         ChatMessage system = new ChatMessage("system", "Answer only using the following context: " + bestDoc);
         ChatMessage user = new ChatMessage("user", question);
 
@@ -88,10 +77,10 @@ public class RAGService {
                 .messages(List.of(system, user))
                 .build();
 
-        String answer = service.createChatCompletion(request)
-                               .getChoices().get(0).getMessage().getContent();
-        System.out.println("GPT Answer: " + answer);
-        return answer;
+        String response = service.createChatCompletion(request)
+                      .getChoices().get(0).getMessage().getContent();
+        logger.info("Generated answer: {}", response);
+        return response;
     }
 
     private double cosineSimilarity(List<Double> a, List<Double> b) {
