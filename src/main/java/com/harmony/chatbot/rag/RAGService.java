@@ -13,13 +13,14 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
-
+import java.util.stream.Collectors;
 
 @Service
 public class RAGService {
 
     private final OpenAiService service;
     private final VectorStore vectorStore;
+    private final int TOP_N = 3; // number of top pages to use
 
     public RAGService() {
         this.service = new OpenAiService(System.getenv("OPENAI_API_KEY"));
@@ -52,21 +53,27 @@ public class RAGService {
                     .mapToDouble(Double::doubleValue)
                     .toArray();
 
-            // Retrieve the most relevant page from the vector store
-            Page page = vectorStore.getMostRelevantPage(qVector);
-            if (page == null) return "I don’t have that information.";
+            // Retrieve top N relevant pages from the vector store
+            List<Page> topPages = vectorStore.getTopNPages(qVector, TOP_N);
+            if (topPages.isEmpty()) return "I don’t have that information.";
 
-            // Send context + user question to GPT using text from JSON
+            // Concatenate their text for GPT context
+            String context = topPages.stream()
+                                     .map(Page::getText)
+                                     .collect(Collectors.joining("\n\n"));
+
+            // Send context + user question to GPT
             ChatMessage system = new ChatMessage("system",
-                    "Answer only using the following context: " + page.getText());
+                    "Answer only using the following context: " + context);
             ChatMessage user = new ChatMessage("user", question);
 
             ChatCompletionRequest request = ChatCompletionRequest.builder()
                     .model("gpt-4o-mini")
                     .messages(List.of(system, user))
                     .build();
-System.out.println("Question embedding: " + Arrays.toString(qVector));
-System.out.println("Most relevant page: " + page.getText());
+
+            System.out.println("Question embedding: " + Arrays.toString(qVector));
+            System.out.println("Top " + TOP_N + " pages context: " + context);
 
             return service.createChatCompletion(request)
                     .getChoices().get(0)
