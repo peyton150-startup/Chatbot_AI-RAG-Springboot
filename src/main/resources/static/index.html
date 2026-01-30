@@ -1,29 +1,205 @@
-async function sendMsg(textOverride) {
-    const text = textOverride || input.value.trim();
-    if (!text) return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Harmony Aesthetics Chat</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
 
-    addMsg(text, "user");
-    input.value = "";
+        #chatBubble {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            background: #b46a8c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 99999;
+        }
 
-    const loading = addMsg("Thinking…", "bot");
+        #chatWindow {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            width: 360px;
+            height: 520px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            display: none;
+            flex-direction: column;
+            z-index: 99999;
+        }
 
-    console.log("Sending question to backend:", text);
+        #chatHeader {
+            padding: 12px;
+            background: #b46a8c;
+            color: white;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    try {
-        const res = await fetch(API, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: text
-        });
+        #suggestions {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #eee;
+        }
 
-        console.log("HTTP status:", res.status);
+        .chip {
+            padding: 6px 12px;
+            border-radius: 16px;
+            border: 1px solid #e5d6de;
+            background: #fdfafb;
+            font-size: 12px;
+            cursor: pointer;
+        }
 
-        const reply = await res.text();
-        console.log("Received reply:", reply);
+        .chip:hover {
+            background: #f1e6ec;
+        }
 
-        loading.textContent = reply || "No response.";
-    } catch (err) {
-        console.error("Fetch error:", err);
-        loading.textContent = "Server error.";
+        #chatMessages {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            background: #fdfafb;
+            font-size: 13px;
+        }
+
+        .msg {
+            margin-bottom: 10px;
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 14px;
+            line-height: 1.4;
+        }
+
+        .user {
+            background: #b46a8c;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot {
+            background: #eee;
+            color: #333;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+
+        #chatInput {
+            display: flex;
+            padding: 10px;
+            gap: 8px;
+            border-top: 1px solid #eee;
+        }
+
+        #chatInput textarea {
+            flex: 1;
+            resize: none;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        #chatInput button {
+            background: #b46a8c;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chatBubble">💬</div>
+
+<div id="chatWindow">
+    <div id="chatHeader">
+        <span>Harmony Assistant</span>
+        <span id="closeChat" style="cursor:pointer;">✕</span>
+    </div>
+
+    <div id="suggestions">
+        <div class="chip">How do I book an appointment?</div>
+        <div class="chip">Where is your office located?</div>
+        <div class="chip">What is Botox?</div>
+    </div>
+
+    <div id="chatMessages">
+        <div class="bot msg">Hi! How can I help you today?</div>
+    </div>
+
+    <div id="chatInput">
+        <textarea id="input" rows="2" placeholder="Ask a question…"></textarea>
+        <button id="send">Send</button>
+    </div>
+</div>
+
+<script>
+    const API = "/api/chat"; // <-- change to "/api/rag-chat" if using RAGController
+
+    const bubble = document.getElementById("chatBubble");
+    const windowBox = document.getElementById("chatWindow");
+    const closeBtn = document.getElementById("closeChat");
+    const messages = document.getElementById("chatMessages");
+    const input = document.getElementById("input");
+    const send = document.getElementById("send");
+
+    bubble.onclick = () => {
+        windowBox.style.display = "flex";
+        bubble.style.display = "none";
+    };
+
+    closeBtn.onclick = () => {
+        windowBox.style.display = "none";
+        bubble.style.display = "flex";
+    };
+
+    function addMsg(text, cls) {
+        const div = document.createElement("div");
+        div.className = `msg ${cls}`;
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
     }
-}
+
+    async function sendMsg(textOverride) {
+        const text = textOverride || input.value.trim();
+        if (!text) return;
+
+        addMsg(text, "user");
+        input.value = "";
+
+        const loading = addMsg("Thinking…", "bot");
+
+        try {
+            const res = await fetch(API, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: text
+            });
+
+            const reply = await res.text();
+            loading.textContent = reply || "No response.";
+        } catch (err) {
