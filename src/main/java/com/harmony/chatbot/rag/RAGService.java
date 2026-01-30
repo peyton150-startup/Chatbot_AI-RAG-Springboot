@@ -2,11 +2,13 @@ package com.harmony.chatbot.rag;
 
 import com.theokanning.openai.OpenAiService;
 import com.theokanning.openai.embedding.EmbeddingRequest;
-import com.theokanning.openai.embedding.EmbeddingResponse;
-import com.theokanning.openai.completion.chat.*;
+import com.theokanning.openai.embedding.response.EmbeddingsResponse;
+import com.theokanning.openai.completion.chat.ChatCompletionRequest;
+import com.theokanning.openai.completion.chat.ChatMessage;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class RAGService {
@@ -16,11 +18,9 @@ public class RAGService {
     private final List<List<Double>> embeddings;
 
     public RAGService() {
-        String key = System.getenv("OPENAI_API_KEY");
-        if (key == null || key.isBlank()) throw new RuntimeException("OPENAI_API_KEY not set");
-        service = new OpenAiService(key);
+        this.service = new OpenAiService(System.getenv("OPENAI_API_KEY"));
 
-        // Example pages (split into chunks)
+        // Example pages (split content into chunks)
         docs = List.of(
             "Harmony Aesthetics & Wellness is a trusted medical spa located in Kensington, Maryland and Falls Church, Virginia...",
             "The Kensington office hours are Monday through Friday from 9:00 am to 5:00 pm...",
@@ -28,30 +28,30 @@ public class RAGService {
             "For appointments or questions, call or text (240) 280-0020 or book online at harmonyaestheticsandwellness.glossgenius.com."
         );
 
-        // Compute embeddings
+        // Precompute embeddings
         embeddings = new ArrayList<>();
         for (String doc : docs) {
-            EmbeddingResponse resp = service.createEmbeddings(
-                    EmbeddingRequest.builder()
-                            .model("text-embedding-3-large")
-                            .input(List.of(doc))
-                            .build()
+            EmbeddingsResponse resp = service.createEmbeddings(
+                EmbeddingRequest.builder()
+                        .model("text-embedding-3-large")
+                        .input(List.of(doc))
+                        .build()
             );
             embeddings.add(resp.getData().get(0).getEmbedding());
         }
     }
 
     public String getAnswer(String question) {
-        // Compute embedding for question
-        EmbeddingResponse qEmb = service.createEmbeddings(
-                EmbeddingRequest.builder()
-                        .model("text-embedding-3-large")
-                        .input(List.of(question))
-                        .build()
+        // Get embedding for user question
+        EmbeddingsResponse qEmb = service.createEmbeddings(
+            EmbeddingRequest.builder()
+                    .model("text-embedding-3-large")
+                    .input(List.of(question))
+                    .build()
         );
         List<Double> qVector = qEmb.getData().get(0).getEmbedding();
 
-        // Find best matching document
+        // Find the closest doc
         double bestScore = -1;
         String bestDoc = null;
         for (int i = 0; i < docs.size(); i++) {
@@ -64,7 +64,7 @@ public class RAGService {
 
         if (bestDoc == null) return "I don’t have that information.";
 
-        // Send question + context to GPT
+        // Send to GPT with context
         ChatMessage system = new ChatMessage("system", "Answer only using the following context: " + bestDoc);
         ChatMessage user = new ChatMessage("user", question);
 
@@ -74,9 +74,7 @@ public class RAGService {
                 .build();
 
         return service.createChatCompletion(request)
-                      .getChoices().get(0)
-                      .getMessage()
-                      .getContent();
+                      .getChoices().get(0).getMessage().getContent();
     }
 
     private double cosineSimilarity(List<Double> a, List<Double> b) {
