@@ -2,6 +2,8 @@ package com.harmony.chatbot.rag;
 
 import com.theokanning.openai.OpenAiService;
 import com.theokanning.openai.embedding.EmbeddingRequest;
+import com.theokanning.openai.embedding.Embedding;
+
 import com.theokanning.openai.embedding.response.EmbeddingsResponse;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
