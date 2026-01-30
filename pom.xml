@@ -1,132 +1,62 @@
- [build 5/6] COPY src ./src
-Menu
-#14 DONE 0.1s
-#15 [build 6/6] RUN mvn clean package -DskipTests
-#15 1.984 [INFO] Scanning for projects...
-#15 2.682 [INFO] 
-#15 2.682 [INFO] ------------------------< com.harmony:chatbot >-------------------------
-#15 2.682 [INFO] Building chatbot 0.0.1-SNAPSHOT
-#15 2.682 [INFO]   from pom.xml
-#15 2.683 [INFO] --------------------------------[ jar ]---------------------------------
-#15 3.793 [INFO] 
-#15 3.793 [INFO] --- clean:3.5.0:clean (default-clean) @ chatbot ---
-#15 4.003 [INFO] 
-#15 4.003 [INFO] --- resources:3.3.1:resources (default-resources) @ chatbot ---
-#15 4.308 [INFO] Copying 1 resource from src/main/resources to target/classes
-#15 4.383 [INFO] Copying 3 resources from src/main/resources to target/classes
-#15 4.389 [INFO] 
-#15 4.389 [INFO] --- compiler:3.14.1:compile (default-compile) @ chatbot ---
-#15 4.521 [INFO] Recompiling the module because of changed source code.
-#15 4.529 [INFO] Compiling 8 source files with javac [debug parameters release 17] to target/classes
-#15 6.483 [INFO] -------------------------------------------------------------
-#15 6.483 [ERROR] COMPILATION ERROR : 
-#15 6.483 [INFO] -------------------------------------------------------------
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[3,8] class ChatController is public, should be declared in a file named ChatController.java
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[1,2] cannot find symbol
-#15 6.484   symbol: class RestController
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[2,2] cannot find symbol
-#15 6.484   symbol: class RequestMapping
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[5,19] cannot find symbol
-#15 6.484   symbol:   class RAGService
-#15 6.484   location: class ChatController
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[7,27] cannot find symbol
-#15 6.484   symbol:   class RAGService
-#15 6.484   location: class ChatController
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[5,30] cannot find symbol
-#15 6.484   symbol:   class OpenAiService
-#15 6.484   location: package com.theokanning.openai
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[7,40] cannot find symbol
-#15 6.484   symbol:   class EmbeddingResponse
-#15 6.484   location: package com.theokanning.openai.embedding
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[15,19] cannot find symbol
-#15 6.484   symbol:   class OpenAiService
-#15 6.484   location: class com.harmony.chatbot.rag.RAGService
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[12,25] cannot find symbol
-#15 6.484   symbol:   class RequestBody
-#15 6.484   location: class ChatController
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[11,6] cannot find symbol
-#15 6.484   symbol:   class PostMapping
-#15 6.484   location: class ChatController
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[20,28] cannot find symbol
-#15 6.484   symbol:   class OpenAiService
-#15 6.484   location: class com.harmony.chatbot.rag.RAGService
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[36,13] cannot find symbol
-#15 6.484   symbol:   class EmbeddingResponse
-#15 6.484   location: class com.harmony.chatbot.rag.RAGService
-#15 6.484 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[51,9] cannot find symbol
-#15 6.484   symbol:   class EmbeddingResponse
-#15 6.484   location: class com.harmony.chatbot.rag.RAGService
-#15 6.484 [INFO] 13 errors 
-#15 6.484 [INFO] -------------------------------------------------------------
-#15 6.485 [INFO] ------------------------------------------------------------------------
-#15 6.485 [INFO] BUILD FAILURE
-#15 6.485 [INFO] ------------------------------------------------------------------------
-#15 6.486 [INFO] Total time:  4.565 s
-#15 6.487 [INFO] Finished at: 2026-01-30T16:07:30Z
-#15 6.487 [INFO] ------------------------------------------------------------------------
-#15 6.489 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile (default-compile) on project chatbot: Compilation failure: Compilation failure: 
-#15 6.489 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[3,8] class ChatController is public, should be declared in a file named ChatController.java
-#15 6.489 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[1,2] cannot find symbol
-#15 6.489 [ERROR]   symbol: class RestController
-#15 6.489 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[2,2] cannot find symbol
-#15 6.489 [ERROR]   symbol: class RequestMapping
-#15 6.489 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[5,19] cannot find symbol
-#15 6.489 [ERROR]   symbol:   class RAGService
-#15 6.489 [ERROR]   location: class ChatController
-#15 6.489 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[7,27] cannot find symbol
-#15 6.489 [ERROR]   symbol:   class RAGService
-#15 6.489 [ERROR]   location: class ChatController
-#15 6.489 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[5,30] cannot find symbol
-#15 6.489 [ERROR]   symbol:   class OpenAiService
-#15 6.490 [ERROR]   location: package com.theokanning.openai
-#15 6.490 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[7,40] cannot find symbol
-#15 6.490 [ERROR]   symbol:   class EmbeddingResponse
-#15 6.490 [ERROR]   location: package com.theokanning.openai.embedding
-#15 6.490 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[15,19] cannot find symbol
-#15 6.490 [ERROR]   symbol:   class OpenAiService
-#15 6.490 [ERROR]   location: class com.harmony.chatbot.rag.RAGService
-#15 6.490 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[12,25] cannot find symbol
-#15 6.490 [ERROR]   symbol:   class RequestBody
-#15 6.491 [ERROR]   location: class ChatController
-#15 6.491 [ERROR] /app/src/main/java/com/harmony/chatbot/ChatbotController.java:[11,6] cannot find symbol
-#15 6.491 [ERROR]   symbol:   class PostMapping
-#15 6.491 [ERROR]   location: class ChatController
-#15 6.491 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[20,28] cannot find symbol
-#15 6.491 [ERROR]   symbol:   class OpenAiService
-#15 6.491 [ERROR]   location: class com.harmony.chatbot.rag.RAGService
-#15 6.491 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[36,13] cannot find symbol
-#15 6.491 [ERROR]   symbol:   class EmbeddingResponse
-#15 6.491 [ERROR]   location: class com.harmony.chatbot.rag.RAGService
-#15 6.491 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[51,9] cannot find symbol
-#15 6.491 [ERROR]   symbol:   class EmbeddingResponse
-#15 6.491 [ERROR]   location: class com.harmony.chatbot.rag.RAGService
-#15 6.491 [ERROR] -> [Help 1]
-#15 6.491 [ERROR] 
-#15 6.491 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-#15 6.492 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-#15 6.492 [ERROR] 
-#15 6.492 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-#15 6.492 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-#15 ERROR: process "/bin/sh -c mvn clean package -DskipTests" did not complete successfully: exit code: 1
-------
- > [build 6/6] RUN mvn clean package -DskipTests:
-6.491 [ERROR] /app/src/main/java/com/harmony/chatbot/rag/RAGService.java:[51,9] cannot find symbol
-6.491 [ERROR]   symbol:   class EmbeddingResponse
-6.491 [ERROR]   location: class com.harmony.chatbot.rag.RAGService
-6.491 [ERROR] -> [Help 1]
-6.491 [ERROR] 
-6.491 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
-6.492 [ERROR] Re-run Maven using the -X switch to enable full debug logging.
-6.492 [ERROR] 
-6.492 [ERROR] For more information about the errors and possible solutions, please read the following articles:
-6.492 [ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
-------
-Dockerfile:12
---------------------
-  10 |     # Copy the source code and build
-  11 |     COPY src ./src
-  12 | >>> RUN mvn clean package -DskipTests
-  13 |     
-  14 |     # Use a lighter JDK image for runtime
---------------------
-error: failed to solve: process "/bin/sh -c mvn clean package -DskipTests" did not complete successfully: exit code: 1
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.harmony</groupId>
+    <artifactId>chatbot</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>chatbot</name>
+    <description>Harmony Aesthetics Chatbot</description>
+
+    <properties>
+        <java.version>17</java.version>
+        <spring.boot.version>3.3.2</spring.boot.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring.boot.version}</version>
+        </dependency>
+
+        <!-- OpenAI Java SDK -->
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>client</artifactId>
+            <version>0.11.0</version>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <configuration>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
