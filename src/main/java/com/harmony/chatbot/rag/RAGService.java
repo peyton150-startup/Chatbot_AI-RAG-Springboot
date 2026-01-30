@@ -3,8 +3,6 @@ package com.harmony.chatbot.rag;
 import com.theokanning.openai.OpenAiService;
 import com.theokanning.openai.embedding.EmbeddingRequest;
 import com.theokanning.openai.embedding.Embedding;
-
-import com.theokanning.openai.embedding.response.EmbeddingsResponse;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import org.springframework.stereotype.Service;
@@ -33,25 +31,25 @@ public class RAGService {
         // Precompute embeddings
         embeddings = new ArrayList<>();
         for (String doc : docs) {
-            EmbeddingsResponse resp = service.createEmbeddings(
-                EmbeddingRequest.builder()
-                        .model("text-embedding-3-large")
-                        .input(List.of(doc))
-                        .build()
-            );
-            embeddings.add(resp.getData().get(0).getEmbedding());
+            List<Embedding> resp = service.createEmbeddings(
+                    EmbeddingRequest.builder()
+                            .model("text-embedding-3-large")
+                            .input(List.of(doc))
+                            .build()
+            ).getData();
+            embeddings.add(resp.get(0).getEmbedding());
         }
     }
 
     public String getAnswer(String question) {
         // Get embedding for user question
-        EmbeddingsResponse qEmb = service.createEmbeddings(
-            EmbeddingRequest.builder()
-                    .model("text-embedding-3-large")
-                    .input(List.of(question))
-                    .build()
-        );
-        List<Double> qVector = qEmb.getData().get(0).getEmbedding();
+        List<Embedding> qEmb = service.createEmbeddings(
+                EmbeddingRequest.builder()
+                        .model("text-embedding-3-large")
+                        .input(List.of(question))
+                        .build()
+        ).getData();
+        List<Double> qVector = qEmb.get(0).getEmbedding();
 
         // Find the closest doc
         double bestScore = -1;
