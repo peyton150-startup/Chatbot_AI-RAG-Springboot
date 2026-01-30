@@ -1,53 +1,52 @@
 package com.harmony.chatbot.rag;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Comparator;
 import java.util.stream.Collectors;
 
 public class VectorStore {
 
     private final List<Page> pages;
 
-    // Constructor: initialize from Page array
+    // Constructor: initialize from Page array or file
     public VectorStore(Page[] pagesArray) {
-        if (pagesArray != null) {
-            this.pages = new ArrayList<>(Arrays.asList(pagesArray));
-        } else {
-            this.pages = new ArrayList<>();
-        }
+        this.pages = pagesArray != null ? new ArrayList<>(Arrays.asList(pagesArray)) : new ArrayList<>();
     }
 
-    // Constructor: initialize from JSON file
     public VectorStore(String pagesFile) {
         this.pages = loadPagesFromFile(pagesFile);
     }
 
     private List<Page> loadPagesFromFile(String pagesFile) {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<Page> loadedPages;
         try {
-            loadedPages = objectMapper.readValue(
+            List<Page> loadedPages = objectMapper.readValue(
                     new File(pagesFile),
                     objectMapper.getTypeFactory().constructCollectionType(List.class, Page.class)
             );
             System.out.println("Loaded " + loadedPages.size() + " pages from " + pagesFile);
+            return loadedPages != null ? loadedPages : new ArrayList<>();
         } catch (IOException e) {
             e.printStackTrace();
-            loadedPages = new ArrayList<>();
+            return new ArrayList<>();
         }
-        return loadedPages;
     }
 
+    /**
+     * Returns the single most relevant page for the query embedding.
+     */
     public Page getMostRelevantPage(double[] queryEmbedding) {
         if (pages.isEmpty() || queryEmbedding == null || queryEmbedding.length == 0) return null;
 
         Page bestPage = null;
         double bestScore = -1;
+
         for (Page page : pages) {
             double[] pageEmb = page.getEmbedding();
             if (pageEmb == null || pageEmb.length == 0) continue;
@@ -66,7 +65,7 @@ public class VectorStore {
      */
     public List<Page> getTopNPages(double[] queryEmbedding, int n) {
         if (pages.isEmpty() || queryEmbedding == null || queryEmbedding.length == 0 || n <= 0) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
         return pages.stream()
@@ -80,6 +79,9 @@ public class VectorStore {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Cosine similarity between two vectors
+     */
     private double cosineSimilarity(double[] a, double[] b) {
         if (a == null || b == null || a.length == 0 || b.length == 0) return 0.0;
 
