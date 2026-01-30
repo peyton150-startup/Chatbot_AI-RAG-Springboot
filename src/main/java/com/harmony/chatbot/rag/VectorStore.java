@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 public class VectorStore {
 
@@ -59,10 +61,28 @@ public class VectorStore {
         return bestPage;
     }
 
+    /**
+     * Returns the top N pages most similar to the query embedding.
+     */
+    public List<Page> getTopNPages(double[] queryEmbedding, int n) {
+        if (pages.isEmpty() || queryEmbedding == null || queryEmbedding.length == 0 || n <= 0) {
+            return new ArrayList<>();
+        }
+
+        return pages.stream()
+                .filter(p -> p.getEmbedding() != null && p.getEmbedding().length > 0)
+                .sorted((p1, p2) -> {
+                    double score1 = cosineSimilarity(queryEmbedding, p1.getEmbedding());
+                    double score2 = cosineSimilarity(queryEmbedding, p2.getEmbedding());
+                    return Double.compare(score2, score1); // descending order
+                })
+                .limit(n)
+                .collect(Collectors.toList());
+    }
+
     private double cosineSimilarity(double[] a, double[] b) {
         if (a == null || b == null || a.length == 0 || b.length == 0) return 0.0;
 
-        // Compare up to the shorter embedding length
         int len = Math.min(a.length, b.length);
         double dot = 0.0, normA = 0.0, normB = 0.0;
 
