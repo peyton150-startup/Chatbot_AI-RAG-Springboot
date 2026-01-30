@@ -9,8 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,14 +19,21 @@ public class RAGService {
     private final OpenAiService service;
     private final VectorStore vectorStore;
 
-    public RAGService() throws IOException {
+    public RAGService() {
         this.service = new OpenAiService(System.getenv("OPENAI_API_KEY"));
 
-        // Load vector store from classpath resource
-        File file = new ClassPathResource("vectors.json").getFile();
-        this.vectorStore = new VectorStore(file.getAbsolutePath());
+        // Load vectors.json from classpath
+        try (InputStream is = new ClassPathResource("vectors.json").getInputStream()) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Page[] pages = objectMapper.readValue(is, Page[].class);
 
-        System.out.println("VectorStore loaded with " + vectorStore.getPages().size() + " pages.");
+            // Initialize VectorStore with pages
+            this.vectorStore = new VectorStore(pages);
+
+            System.out.println("VectorStore loaded with " + pages.length + " pages.");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load vectors.json", e);
+        }
     }
 
     public String getAnswer(String question) {
