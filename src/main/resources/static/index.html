@@ -156,7 +156,7 @@
 </div>
 
 <script>
-    const API = "/api/chat"; // <-- change to "/api/rag-chat" if using RAGController
+    const API = "/api/rag-chat";
 
     const bubble = document.getElementById("chatBubble");
     const windowBox = document.getElementById("chatWindow");
@@ -203,3 +203,27 @@
             const reply = await res.text();
             loading.textContent = reply || "No response.";
         } catch (err) {
+            console.error("Fetch error:", err);
+            loading.textContent = "Server error.";
+        }
+    }
+
+    send.onclick = () => sendMsg();
+
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            sendMsg();
+        }
+    });
+
+    document.querySelectorAll(".chip").forEach(chip => {
+        chip.onclick = () => {
+            sendMsg(chip.textContent);
+            document.getElementById("suggestions").style.display = "none";
+        };
+    });
+</script>
+
+</body>
+</html>
