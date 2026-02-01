@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Admin</title>
-    <meta charset="UTF-8" />
+    <title>Admin Page</title>
 </head>
 <body>
-
-<h1>Admin Panel</h1>
-
-<p>This is the admin page. Content will evolve.</p>
-
+<h1>Users</h1>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+    </tr>
+    <tr th:each="user : ${users}">
+        <td th:text="${user.id}"></td>
+        <td th:text="${user.name}"></td>
+        <td th:text="${user.email}"></td>
+    </tr>
+</table>
 </body>
 </html>
-
