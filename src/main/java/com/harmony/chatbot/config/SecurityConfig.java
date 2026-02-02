@@ -14,7 +14,7 @@ public class SecurityConfig {
 
     private final UserService userService;
 
-    public SecurityConfig(UserService userService) {
+    public SecurityConfig(@Lazy UserService userService) {
         this.userService = userService;
     }
 
