@@ -19,7 +19,16 @@ public class UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
+@Service
+public class UserService implements UserDetailsService {
+    // existing fields ...
 
+    @Override
+    public UserEntity loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
+}
     /**
      * Get all users
      */
