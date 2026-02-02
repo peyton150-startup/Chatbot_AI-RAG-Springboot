@@ -1,27 +1,100 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<link rel="stylesheet" th:href="@{/admin.css}">
 <head>
-    <title>Admin</title>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" th:href="@{/admin.css}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f0f8;
+            color: #333;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            color: #5a2d82; /* light purple */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #d6c1e0; /* light purple header */
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2eafa;
+        }
+
+        button {
+            background-color: #5a2d82;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #7c4dab;
+        }
+
+        form.add-user {
+            margin-top: 10px;
+        }
+
+        input {
+            padding: 5px;
+            margin-right: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
 
 <h1>Admin Panel</h1>
 
 <h2>Users</h2>
-<ul>
-    <li th:each="user : ${users}">
-        <span th:text="${user.email}">email</span>
-
-        <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post" style="display:inline;">
-            <button type="submit">Delete</button>
-        </form>
-    </li>
-</ul>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="user : ${users}">
+            <td th:text="${user.id}">1</td>
+            <td th:text="${user.username}">username</td>
+            <td th:text="${user.email}">email</td>
+            <td th:text="${#dates.format(user.createdAt, 'yyyy-MM-dd HH:mm')}">created</td>
+            <td>
+                <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post" style="display:inline;">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+    </tbody>
+</table>
 
 <h2>Add User</h2>
-<form th:action="@{/admin/users}" method="post">
-    <input type="text" name="email" placeholder="Email" required />
+<form class="add-user" th:action="@{/admin/users}" method="post">
+    <input type="text" name="username" placeholder="Username" required />
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Password" required />
     <button type="submit">Create</button>
 </form>
 
