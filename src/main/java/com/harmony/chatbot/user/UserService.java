@@ -12,11 +12,14 @@ import java.util.Optional;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder; // setter-injected to avoid circular dependency
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    // Setter injection for PasswordEncoder
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -35,8 +38,6 @@ public class UserService implements UserDetailsService {
     }
 
     public UserEntity saveUser(UserEntity user) {
-
-        // Basic input validation
         if (user.getUsername() == null || user.getUsername().trim().isEmpty())
             throw new IllegalArgumentException("Username cannot be empty");
         if (user.getEmail() == null || user.getEmail().trim().isEmpty())
@@ -44,13 +45,11 @@ public class UserService implements UserDetailsService {
         if (user.getPassword() == null || user.getPassword().trim().isEmpty())
             throw new IllegalArgumentException("Password cannot be empty");
 
-        // Enforce max lengths
         user.setUsername(user.getUsername().substring(0, Math.min(50, user.getUsername().length())));
         user.setEmail(user.getEmail().substring(0, Math.min(100, user.getEmail().length())));
-        user.setPassword(user.getPassword().substring(0, Math.min(100, user.getPassword().length())));
 
         // Hash password if not already hashed
-        if (!user.getPassword().startsWith("$2")) {
+        if (!user.getPassword().startsWith("$2") && passwordEncoder != null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
