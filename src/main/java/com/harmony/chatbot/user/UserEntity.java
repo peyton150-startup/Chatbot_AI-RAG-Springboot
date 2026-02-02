@@ -45,7 +45,7 @@ public class UserEntity implements UserDetails {
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(() -> "ROLE_" + role);
+        return Collections.singleton(() -> role);
     }
 
     @Override
