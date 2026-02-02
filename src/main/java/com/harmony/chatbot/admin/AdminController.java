@@ -19,11 +19,17 @@ public class AdminController {
     /**
      * Admin dashboard – list users
      */
-    @GetMapping
-    public String adminHome(Model model) {
-        model.addAttribute("users", userService.getAllUsers());
-        return "admin"; // renders admin.html
-    }
+   @GetMapping
+public String adminHome(Model model) {
+    var users = userService.getAllUsers();
+
+    // Strip passwords before sending to template
+    users.forEach(u -> u.setPassword(null));
+
+    model.addAttribute("users", users);
+    return "admin";
+}
+
 
     /**
      * Create a new user (basic version)
