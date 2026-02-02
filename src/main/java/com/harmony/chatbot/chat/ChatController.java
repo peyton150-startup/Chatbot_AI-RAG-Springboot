@@ -1,4 +1,4 @@
-package com.harmony.chatbot;
+package com.harmony.chatbot.chat;
 
 import com.harmony.chatbot.rag.RAGService;
 import org.springframework.web.bind.annotation.*;
