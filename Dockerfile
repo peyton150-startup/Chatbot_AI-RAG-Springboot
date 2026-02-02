@@ -18,3 +18,9 @@ EXPOSE 10000
 ENV OPENAI_API_KEY=""
 
 ENTRYPOINT ["java","-jar","chatbot.jar"]
+<mirror>
+    <id>aliyun</id>
+    <name>aliyun maven</name>
+    <url>https://maven.aliyun.com/repository/public</url>
+    <mirrorOf>*</mirrorOf>
+</mirror>
