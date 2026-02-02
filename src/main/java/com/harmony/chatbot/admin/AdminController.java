@@ -3,6 +3,7 @@ package com.harmony.chatbot.admin;
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/admin")
+@PreAuthorize("hasRole('ADMIN')") // ensures only ADMIN can access any endpoint in this controller
 public class AdminController {
 
     private final UserService userService;
