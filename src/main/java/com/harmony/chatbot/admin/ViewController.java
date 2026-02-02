@@ -11,8 +11,4 @@ public class ViewController {
         return "login"; // renders login.html
     }
 
-    @GetMapping("/admin")
-    public String admin() {
-        return "admin"; // renders admin.html
-    }
 }
