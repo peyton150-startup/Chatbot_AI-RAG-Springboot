@@ -1,4 +1,4 @@
-package com.harmony.chatbot;
+package com.harmony.chatbot.chat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
