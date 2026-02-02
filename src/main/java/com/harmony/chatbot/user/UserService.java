@@ -12,13 +12,15 @@ import java.util.Optional;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
-    private PasswordEncoder passwordEncoder; // setter-injected to avoid circular dependency
+
+    // Injected manually from SecurityConfig
+    private PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    // Setter injection for PasswordEncoder
+    // Setter for manual injection
     public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }
