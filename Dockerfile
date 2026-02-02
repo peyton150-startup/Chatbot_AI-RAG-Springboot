@@ -6,7 +6,7 @@ COPY pom.xml .
 RUN mvn dependency:go-offline
 
 COPY src ./src
-RUN mvn clean install -U -B -X
+RUN mvn clean install -B -X
 
 # Runtime image
 FROM eclipse-temurin:17-jre
