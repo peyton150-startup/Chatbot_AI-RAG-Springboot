@@ -1,26 +1,33 @@
-# Build image
-FROM maven:3.9.2-eclipse-temurin-17 AS build
+# Use a stable Maven + JDK image
+FROM maven:3.9.4-eclipse-temurin-17 AS build
+
+# Set working directory
 WORKDIR /app
 
+# Step 1: Copy only pom.xml to leverage Docker cache
 COPY pom.xml .
-RUN mvn dependency:go-offline
 
+# Step 2: Pre-download all dependencies
+RUN mvn dependency:go-offline -B
+
+# Step 3: Copy source code
 COPY src ./src
-RUN mvn clean install -B -X
 
-# Runtime image
-FROM eclipse-temurin:17-jre
+# Step 4: Build the project (clean install)
+RUN mvn clean install -B -DskipTests
+
+# -----------------------------
+# Optional: Create a smaller runtime image
+# -----------------------------
+FROM eclipse-temurin:17-jdk-jammy
+
 WORKDIR /app
-COPY --from=build /app/target/chatbot-*.jar ./chatbot.jar
 
+# Copy built JAR from previous stage
+COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 10000
-ENV OPENAI_API_KEY=""
+# Expose default Spring Boot port
+EXPOSE 8080
 
-ENTRYPOINT ["java","-jar","chatbot.jar"]
-<mirror>
-    <id>aliyun</id>
-    <name>aliyun maven</name>
-    <url>https://maven.aliyun.com/repository/public</url>
-    <mirrorOf>*</mirrorOf>
-</mirror>
+# Command to run the app
+ENTRYPOINT ["java","-jar","app.jar"]
