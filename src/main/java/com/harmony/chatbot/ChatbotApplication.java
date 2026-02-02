@@ -26,17 +26,19 @@ public class ChatbotApplication {
         };
     }
 
+    // Seed an initial admin user
     @Bean
-    CommandLineRunner init(UserService userService) {
+    CommandLineRunner initAdmin(UserService userService) {
         return args -> {
-            if (userService.getAllUsers().isEmpty()) {
+            String adminUsername = "admin";
+            if (userService.getAllUsers().stream().noneMatch(u -> u.getUsername().equals(adminUsername))) {
                 UserEntity admin = new UserEntity();
-                admin.setUsername("admin");
+                admin.setUsername(adminUsername);
                 admin.setEmail("admin@example.com");
-                admin.setPassword("admin123"); // hashed automatically
-                admin.setRole("ADMIN");         // ensure UserEntity has a role field
+                admin.setPassword("admin123"); // will be hashed automatically
+                admin.setRole("ROLE_ADMIN");   // add ROLE_ADMIN field in UserEntity if not already
                 userService.saveUser(admin);
-                System.out.println("Default admin created: admin / admin123");
+                System.out.println("Admin user created: username=admin, password=admin123");
             }
         };
     }
