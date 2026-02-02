@@ -46,6 +46,40 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+    @GetMapping("/users/{id}/edit")
+    public String editUserForm(@PathVariable Long id, Model model) {
+        UserEntity user = userService.getUserById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
+        model.addAttribute("user", user);
+        return "edit-user";
+    }
+
+    @PostMapping("/users/{id}/edit")
+    public String editUser(@PathVariable Long id,
+                           @ModelAttribute("user") @Valid UserEntity updatedUser,
+                           BindingResult bindingResult,
+                           Model model) {
+
+        if (bindingResult.hasErrors()) {
+            return "edit-user";
+        }
+
+        UserEntity user = userService.getUserById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
+
+        user.setUsername(updatedUser.getUsername());
+        user.setEmail(updatedUser.getEmail());
+        user.setRole(updatedUser.getRole());
+
+        // Only update password if provided
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            user.setPassword(updatedUser.getPassword());
+        }
+
+        userService.saveUser(user);
+        return "redirect:/admin";
+    }
+
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
