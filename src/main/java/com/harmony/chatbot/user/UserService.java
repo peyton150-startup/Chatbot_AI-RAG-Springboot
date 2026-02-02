@@ -1,5 +1,6 @@
 package com.harmony.chatbot.user;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,9 +10,12 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -22,7 +26,7 @@ public class UserService {
     }
 
     /**
-     * Get a user by ID
+     * Get user by ID
      */
     public Optional<UserEntity> getUserById(Long id) {
         return userRepository.findById(id);
@@ -32,21 +36,27 @@ public class UserService {
      * Create or update a user
      */
     public UserEntity saveUser(UserEntity user) {
+
+        // Only hash if password is new or changed
+        if (user.getPassword() != null && !user.getPassword().startsWith("$2")) {
+            String hashedPassword = passwordEncoder.encode(user.getPassword());
+            user.setPassword(hashedPassword);
+        }
+
         return userRepository.save(user);
     }
 
     /**
-     * Delete a user by ID
+     * Delete user
      */
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
 
     /**
-     * Check if a user exists
+     * Check existence
      */
     public boolean userExists(Long id) {
         return userRepository.existsById(id);
     }
 }
-
