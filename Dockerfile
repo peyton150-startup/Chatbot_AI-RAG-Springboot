@@ -14,7 +14,7 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 
 # Step 4: Build the project (clean install)
-RUN mvn clean install -B -DskipTests
+RUN mvn clean install -B -DskipTests -X
 
 # -----------------------------
 # Optional: Create a smaller runtime image
