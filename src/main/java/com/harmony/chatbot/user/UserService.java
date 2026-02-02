@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -19,16 +19,16 @@ public class UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
-@Service
-public class UserService implements UserDetailsService {
-    // existing fields ...
 
+    /**
+     * Load user by username (required by Spring Security)
+     */
     @Override
     public UserEntity loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
-}
+
     /**
      * Get all users
      */
@@ -47,8 +47,7 @@ public class UserService implements UserDetailsService {
      * Create or update a user
      */
     public UserEntity saveUser(UserEntity user) {
-
-        // Only hash if password is new or changed
+        // Only hash password if it's new or not already hashed
         if (user.getPassword() != null && !user.getPassword().startsWith("$2")) {
             String hashedPassword = passwordEncoder.encode(user.getPassword());
             user.setPassword(hashedPassword);
@@ -65,7 +64,7 @@ public class UserService implements UserDetailsService {
     }
 
     /**
-     * Check existence
+     * Check if user exists
      */
     public boolean userExists(Long id) {
         return userRepository.existsById(id);
