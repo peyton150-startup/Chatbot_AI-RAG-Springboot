@@ -18,13 +18,25 @@ public class AdminController {
         this.userService = userService;
     }
 
+    // Dashboard: show all users and form for adding new user
     @GetMapping
     public String adminHome(Model model) {
         model.addAttribute("users", userService.getAllUsers());
-        model.addAttribute("user", new UserEntity());
+        model.addAttribute("user", new UserEntity()); // for add new user form
         return "admin";
     }
 
+    // Load user for editing
+    @GetMapping("/users/{id}/edit")
+    public String editUserForm(@PathVariable Long id, Model model) {
+        UserEntity user = userService.getUserById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        model.addAttribute("user", user);
+        model.addAttribute("users", userService.getAllUsers());
+        return "admin";
+    }
+
+    // Add new user
     @PostMapping("/users")
     public String createUser(@ModelAttribute("user") @Valid UserEntity user,
                              BindingResult bindingResult,
@@ -46,40 +58,34 @@ public class AdminController {
         return "redirect:/admin";
     }
 
-    @GetMapping("/users/{id}/edit")
-    public String editUserForm(@PathVariable Long id, Model model) {
-        UserEntity user = userService.getUserById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
-        model.addAttribute("user", user);
-        return "edit-user";
-    }
-
+    // Update existing user
     @PostMapping("/users/{id}/edit")
-    public String editUser(@PathVariable Long id,
-                           @ModelAttribute("user") @Valid UserEntity updatedUser,
-                           BindingResult bindingResult,
-                           Model model) {
+    public String updateUser(@PathVariable Long id,
+                             @ModelAttribute("user") @Valid UserEntity updatedUser,
+                             BindingResult bindingResult,
+                             Model model) {
 
         if (bindingResult.hasErrors()) {
-            return "edit-user";
+            model.addAttribute("users", userService.getAllUsers());
+            return "admin";
         }
 
-        UserEntity user = userService.getUserById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
+        UserEntity existingUser = userService.getUserById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        user.setUsername(updatedUser.getUsername());
-        user.setEmail(updatedUser.getEmail());
-        user.setRole(updatedUser.getRole());
+        existingUser.setUsername(updatedUser.getUsername());
+        existingUser.setEmail(updatedUser.getEmail());
+        existingUser.setRole(updatedUser.getRole());
 
-        // Only update password if provided
-        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-            user.setPassword(updatedUser.getPassword());
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isBlank()) {
+            existingUser.setPassword(updatedUser.getPassword()); // hash inside service
         }
 
-        userService.saveUser(user);
+        userService.saveUser(existingUser);
         return "redirect:/admin";
     }
 
+    // Delete user
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
