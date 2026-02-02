@@ -12,31 +12,21 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
+    // No constructor injection; beans resolved by Spring automatically
 
-    // Constructor injection
-    public SecurityConfig(UserService userService, PasswordEncoder passwordEncoder) {
-        this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
-    }
-
-    // PasswordEncoder bean used by both SecurityConfig and UserService
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Authentication provider for Spring Security
     @Bean
-    public DaoAuthenticationProvider authProvider() {
+    public DaoAuthenticationProvider authProvider(UserService userService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userService); // UserService implements UserDetailsService
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
 
-    // Security filter chain
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
