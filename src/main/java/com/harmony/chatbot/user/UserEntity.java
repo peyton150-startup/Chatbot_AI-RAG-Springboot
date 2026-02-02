@@ -1,5 +1,6 @@
 package com.harmony.chatbot.user;
 
+
 import jakarta.persistence.*;
 import java.time.Instant;
 
