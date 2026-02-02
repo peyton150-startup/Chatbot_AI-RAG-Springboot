@@ -2,8 +2,8 @@ package com.harmony.chatbot.user;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,16 +12,11 @@ import java.util.Optional;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    // Injected manually from SecurityConfig
-    private PasswordEncoder passwordEncoder;
-
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-    }
-
-    // Setter for manual injection
-    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -40,6 +35,7 @@ public class UserService implements UserDetailsService {
     }
 
     public UserEntity saveUser(UserEntity user) {
+
         if (user.getUsername() == null || user.getUsername().trim().isEmpty())
             throw new IllegalArgumentException("Username cannot be empty");
         if (user.getEmail() == null || user.getEmail().trim().isEmpty())
@@ -50,8 +46,7 @@ public class UserService implements UserDetailsService {
         user.setUsername(user.getUsername().substring(0, Math.min(50, user.getUsername().length())));
         user.setEmail(user.getEmail().substring(0, Math.min(100, user.getEmail().length())));
 
-        // Hash password if not already hashed
-        if (!user.getPassword().startsWith("$2") && passwordEncoder != null) {
+        if (!user.getPassword().startsWith("$2")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
