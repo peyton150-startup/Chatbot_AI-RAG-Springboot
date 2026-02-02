@@ -14,8 +14,8 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+    // Constructor injection
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -35,7 +35,6 @@ public class UserService implements UserDetailsService {
     }
 
     public UserEntity saveUser(UserEntity user) {
-
         if (user.getUsername() == null || user.getUsername().trim().isEmpty())
             throw new IllegalArgumentException("Username cannot be empty");
         if (user.getEmail() == null || user.getEmail().trim().isEmpty())
@@ -46,6 +45,7 @@ public class UserService implements UserDetailsService {
         user.setUsername(user.getUsername().substring(0, Math.min(50, user.getUsername().length())));
         user.setEmail(user.getEmail().substring(0, Math.min(100, user.getEmail().length())));
 
+        // Only hash password if not already hashed
         if (!user.getPassword().startsWith("$2")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
