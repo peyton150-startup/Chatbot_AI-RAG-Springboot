@@ -60,4 +60,28 @@ public class UserService implements UserDetailsService {
     public boolean userExists(Long id) {
         return userRepository.existsById(id);
     }
+
+    // ----------------------------
+    // NEW: Update user for admin edit
+    // ----------------------------
+    public void updateUser(Long id, UserEntity updatedUser) {
+        Optional<UserEntity> existingOpt = userRepository.findById(id);
+        if (existingOpt.isEmpty()) {
+            throw new RuntimeException("User not found with id: " + id);
+        }
+
+        UserEntity existingUser = existingOpt.get();
+
+        existingUser.setUsername(updatedUser.getUsername());
+        existingUser.setEmail(updatedUser.getEmail());
+        existingUser.setRole(updatedUser.getRole());
+
+        // Only update password if provided
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isBlank()) {
+            // Hash the password before saving
+            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        }
+
+        userRepository.save(existingUser);
+    }
 }
