@@ -21,21 +21,24 @@ public class AdminController {
     @GetMapping
     public String adminHome(Model model) {
         model.addAttribute("users", userService.getAllUsers());
-        model.addAttribute("user", new UserEntity()); // for form binding
+        model.addAttribute("user", new UserEntity()); // for Add form
+        model.addAttribute("editUser", new UserEntity()); // for Edit modal
         return "admin";
     }
 
+    // Create new user
     @PostMapping("/users")
     public String createUser(@ModelAttribute("user") @Valid UserEntity user,
                              BindingResult bindingResult,
                              Model model) {
+
         if (bindingResult.hasErrors()) {
             model.addAttribute("users", userService.getAllUsers());
             return "admin";
         }
 
         try {
-            userService.saveUser(user); // handles password hashing internally
+            userService.saveUser(user);
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Error creating user: " + e.getMessage());
             model.addAttribute("users", userService.getAllUsers());
@@ -45,25 +48,40 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+    // Delete user
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return "redirect:/admin";
     }
 
+    // Update user
     @PostMapping("/users/{id}/edit")
     public String editUser(@PathVariable Long id,
-                           @ModelAttribute("user") @Valid UserEntity updatedUser,
+                           @ModelAttribute("editUser") @Valid UserEntity updatedUser,
                            BindingResult bindingResult,
                            Model model) {
+
+        if (!userService.userExists(id)) {
+            model.addAttribute("errorMessage", "User not found");
+            model.addAttribute("users", userService.getAllUsers());
+            return "admin";
+        }
+
         if (bindingResult.hasErrors()) {
             model.addAttribute("users", userService.getAllUsers());
-            model.addAttribute("errorMessage", "Error updating user.");
             return "admin";
         }
 
         try {
-            userService.updateUser(id, updatedUser); // Handles password hashing & partial update
+            UserEntity user = userService.getUserById(id).orElseThrow();
+            user.setUsername(updatedUser.getUsername());
+            user.setEmail(updatedUser.getEmail());
+            user.setRole(updatedUser.getRole());
+            if (!updatedUser.getPassword().isEmpty()) {
+                user.setPassword(updatedUser.getPassword()); // hashed in service
+            }
+            userService.saveUser(user);
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Error updating user: " + e.getMessage());
             model.addAttribute("users", userService.getAllUsers());
