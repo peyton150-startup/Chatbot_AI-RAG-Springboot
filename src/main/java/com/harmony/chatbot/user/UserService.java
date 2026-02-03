@@ -14,7 +14,6 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // Constructor injection
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -39,14 +38,12 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("Username cannot be empty");
         if (user.getEmail() == null || user.getEmail().trim().isEmpty())
             throw new IllegalArgumentException("Email cannot be empty");
-        if (user.getPassword() == null || user.getPassword().trim().isEmpty())
-            throw new IllegalArgumentException("Password cannot be empty");
 
         user.setUsername(user.getUsername().substring(0, Math.min(50, user.getUsername().length())));
         user.setEmail(user.getEmail().substring(0, Math.min(100, user.getEmail().length())));
 
-        // Only hash password if not already hashed
-        if (!user.getPassword().startsWith("$2")) {
+        // Only hash password if not empty and not already hashed
+        if (user.getPassword() != null && !user.getPassword().isEmpty() && !user.getPassword().startsWith("$2")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
@@ -59,29 +56,5 @@ public class UserService implements UserDetailsService {
 
     public boolean userExists(Long id) {
         return userRepository.existsById(id);
-    }
-
-    // ----------------------------
-    // NEW: Update user for admin edit
-    // ----------------------------
-    public void updateUser(Long id, UserEntity updatedUser) {
-        Optional<UserEntity> existingOpt = userRepository.findById(id);
-        if (existingOpt.isEmpty()) {
-            throw new RuntimeException("User not found with id: " + id);
-        }
-
-        UserEntity existingUser = existingOpt.get();
-
-        existingUser.setUsername(updatedUser.getUsername());
-        existingUser.setEmail(updatedUser.getEmail());
-        existingUser.setRole(updatedUser.getRole());
-
-        // Only update password if provided
-        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isBlank()) {
-            // Hash the password before saving
-            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
-        }
-
-        userRepository.save(existingUser);
     }
 }
