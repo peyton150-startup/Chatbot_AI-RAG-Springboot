@@ -37,10 +37,19 @@ public class UserEntity implements UserDetails {
     private String password;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 
     @Column(nullable = false)
-    private String role = "USER"; // default role
+    private String role = "ROLE_USER"; // default role
+
+    public UserEntity() {
+        // default constructor
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = Instant.now();
+    }
 
     @Override
     @JsonIgnore
@@ -75,8 +84,23 @@ public class UserEntity implements UserDetails {
     public void setEmail(String email) { this.email = email; }
 
     public void setPassword(String password) { this.password = password; }
+
     public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+
+    public void setRole(String role) {
+        if (!role.startsWith("ROLE_")) {
+            this.role = "ROLE_" + role.toUpperCase();
+        } else {
+            this.role = role.toUpperCase();
+        }
+    }
+
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    // Helper to display role cleanly in admin panel
+    @Transient
+    public String getRoleDisplay() {
+        return role.replace("ROLE_", "");
+    }
 }
