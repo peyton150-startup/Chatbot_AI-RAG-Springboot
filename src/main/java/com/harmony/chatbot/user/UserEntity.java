@@ -43,8 +43,7 @@ public class UserEntity implements UserDetails {
     private Instant createdAt;
 
     /**
-     * IMPORTANT:
-     * Role is stored as: ADMIN, USER, etc (NO ROLE_ PREFIX)
+     * Role stored as: ADMIN, USER (NO ROLE_ prefix)
      */
     @Column(nullable = false)
     private String role = "USER";
@@ -59,8 +58,7 @@ public class UserEntity implements UserDetails {
     }
 
     /**
-     * Spring Security authorization relies on GrantedAuthority objects.
-     * We explicitly use SimpleGrantedAuthority to avoid lambda issues.
+     * Spring Security authorization
      */
     @Override
     @JsonIgnore
@@ -84,4 +82,61 @@ public class UserEntity implements UserDetails {
     @Override public boolean isCredentialsNonExpired() { return true; }
     @Override public boolean isEnabled() { return true; }
 
-    // ===== Getter
+    // ===== Getters / Setters =====
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    /**
+     * Normalize role input (ADMIN / USER)
+     */
+    public void setRole(String role) {
+        this.role = role.toUpperCase();
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Transient
+    public String getRoleDisplay() {
+        return role;
+    }
+
+    @Override
+    public String toString() {
+        return "UserEntity{id=" + id +
+                ", username='" + username + '\'' +
+                ", role='" + role + '\'' +
+                '}';
+    }
+}
