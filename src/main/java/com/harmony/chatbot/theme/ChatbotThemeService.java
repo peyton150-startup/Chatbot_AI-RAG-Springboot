@@ -10,7 +10,6 @@ import java.util.UUID;
 public class ChatbotThemeService {
 
     private final ChatbotThemeRepository repository;
-
     private static final String AVATAR_DIR = "uploads/avatar/";
 
     public ChatbotThemeService(ChatbotThemeRepository repository) {
@@ -40,9 +39,7 @@ public class ChatbotThemeService {
             File dir = new File(AVATAR_DIR);
             if (!dir.exists()) dir.mkdirs();
 
-            File dest = new File(dir, filename);
-            avatarFile.transferTo(dest);
-
+            avatarFile.transferTo(new File(dir, filename));
             theme.setAvatarFilename(filename);
         }
 
