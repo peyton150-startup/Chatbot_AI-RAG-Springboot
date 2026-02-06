@@ -25,6 +25,7 @@ public class ChatbotThemeService {
         System.out.println("ChatbotThemeService initialized with uploadDir: " + uploadDir);
     }
 
+    // Returns ChatbotThemeEntity only
     public ChatbotThemeEntity getThemeForCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity user = userService.getUserByUsernameOptional(username)
