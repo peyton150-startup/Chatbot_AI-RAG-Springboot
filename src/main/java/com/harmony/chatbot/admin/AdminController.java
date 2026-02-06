@@ -62,7 +62,7 @@ public class AdminController {
     @PostMapping("/theme")
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
-                            @RequestParam(required = false) MultipartFile avatarFile) throws IOException {
+                            @RequestParam(name = "avatar", required = false) MultipartFile avatarFile) throws IOException {
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
         themeService.updateThemeForUser(user.getId(), themeForm, avatarFile);
         return "redirect:/admin";
