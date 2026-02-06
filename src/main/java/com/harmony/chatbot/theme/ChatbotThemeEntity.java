@@ -1,5 +1,6 @@
 package com.harmony.chatbot.theme;
 
+import com.harmony.chatbot.user.UserEntity;
 import jakarta.persistence.*;
 
 @Entity
@@ -9,6 +10,9 @@ public class ChatbotThemeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne
+    private UserEntity user;
 
     @Column(nullable = false)
     private String headerColor = "#0d6efd";
@@ -27,6 +31,9 @@ public class ChatbotThemeEntity {
 
     public Long getId() { return id; }
 
+    public UserEntity getUser() { return user; }
+    public void setUser(UserEntity user) { this.user = user; }
+
     public String getHeaderColor() { return headerColor; }
     public void setHeaderColor(String headerColor) { this.headerColor = headerColor; }
 
@@ -40,7 +47,5 @@ public class ChatbotThemeEntity {
     public void setIconColor(String iconColor) { this.iconColor = iconColor; }
 
     public String getAvatarFilename() { return avatarFilename; }
-    public void setAvatarFilename(String avatarFilename) {
-        this.avatarFilename = avatarFilename;
-    }
+    public void setAvatarFilename(String avatarFilename) { this.avatarFilename = avatarFilename; }
 }
