@@ -28,18 +28,31 @@ public class AdminController {
 
     @GetMapping
     public String adminDashboard(@AuthenticationPrincipal UserDetails currentUser, Model model) {
-        // Users list for table
+        if (currentUser == null) {
+            throw new IllegalStateException("No authenticated user found!");
+        }
+
+        // Add all users for admin view
         List<UserEntity> users = userService.getAllUsers();
         model.addAttribute("users", users);
         model.addAttribute("user", new UserEntity());
         model.addAttribute("editMode", false);
 
-        // Current logged-in user
+        // Fetch or create logged-in user
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseGet(() -> {
+                    // Optional: create admin in DB if missing
+                    UserEntity newUser = new UserEntity();
+                    newUser.setUsername(currentUser.getUsername());
+                    newUser.setEmail(currentUser.getUsername() + "@example.com");
+                    newUser.setRole("ADMIN");
+                    userService.saveUser(newUser);
+                    return newUser;
+                });
 
-        // Ensure every user has a theme
-        ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(user.getId());
+        // Fetch existing theme or create default if missing
+        ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
+                .orElseGet(() -> themeService.getThemeForCurrentUser());
         model.addAttribute("theme", theme);
 
         return "admin";
@@ -67,11 +80,15 @@ public class AdminController {
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
                             @RequestParam(name = "avatar", required = false) MultipartFile avatarFile) throws IOException {
+        if (currentUser == null) {
+            throw new IllegalStateException("No authenticated user found!");
+        }
 
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found in DB"));
 
         themeService.updateThemeForUser(user.getId(), themeForm, avatarFile);
+
         return "redirect:/admin";
     }
 }
