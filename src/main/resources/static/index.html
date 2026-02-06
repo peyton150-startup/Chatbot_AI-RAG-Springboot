@@ -1,9 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
     <title>Harmony Aesthetics Chat</title>
+
+    <!-- CSS Variables from Admin Settings -->
     <style>
+        :root {
+            --chat-header: [[${theme.headerColor}]];
+            --chat-bg: [[${theme.backgroundColor}]];
+            --chat-text: [[${theme.textColor}]];
+            --chat-icon: [[${theme.iconColor}]];
+        }
+
         html, body {
             margin: 0;
             padding: 0;
@@ -17,7 +26,7 @@
             right: 24px;
             width: 60px;
             height: 60px;
-            background: #b46a8c;
+            background: var(--chat-icon);
             color: white;
             border-radius: 50%;
             display: flex;
@@ -35,7 +44,7 @@
             right: 24px;
             width: 360px;
             height: 520px;
-            background: white;
+            background: var(--chat-bg);
             border-radius: 16px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.25);
             display: none;
@@ -45,12 +54,19 @@
 
         #chatHeader {
             padding: 12px;
-            background: #b46a8c;
+            background: var(--chat-header);
             color: white;
             border-radius: 16px 16px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        #chatHeader img.chatbot-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 8px;
         }
 
         #suggestions {
@@ -79,6 +95,7 @@
             padding: 12px;
             overflow-y: auto;
             background: #fdfafb;
+            color: var(--chat-text);
             font-size: 13px;
         }
 
@@ -91,7 +108,7 @@
         }
 
         .user {
-            background: #b46a8c;
+            background: var(--chat-icon);
             color: white;
             margin-left: auto;
             border-bottom-right-radius: 4px;
@@ -120,7 +137,7 @@
         }
 
         #chatInput button {
-            background: #b46a8c;
+            background: var(--chat-icon);
             color: white;
             border: none;
             border-radius: 20px;
@@ -131,11 +148,17 @@
 </head>
 <body>
 
-<div id="chatBubble">💬</div>
+<div id="chatBubble">
+    <img th:if="${theme.avatarFilename}" th:src="@{'/uploads/avatar/' + ${theme.avatarFilename}}" class="chatbot-avatar" />
+    <span th:if="${theme.avatarFilename == null}">💬</span>
+</div>
 
 <div id="chatWindow">
     <div id="chatHeader">
-        <span>Harmony Assistant</span>
+        <div style="display:flex; align-items:center;">
+            <img th:if="${theme.avatarFilename}" th:src="@{'/uploads/avatar/' + ${theme.avatarFilename}}" class="chatbot-avatar" />
+            <span>Harmony Assistant</span>
+        </div>
         <span id="closeChat" style="cursor:pointer;">✕</span>
     </div>
 
