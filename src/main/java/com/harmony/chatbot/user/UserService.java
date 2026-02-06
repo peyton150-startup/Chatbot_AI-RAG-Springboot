@@ -21,24 +21,35 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserEntity loadUserByUsername(String username) throws UsernameNotFoundException {
+        System.out.println("Attempting to load user by username: " + username);
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .map(u -> {
+                    System.out.println("User found: " + u.getUsername() + ", role: " + u.getRole());
+                    return u;
+                })
+                .orElseThrow(() -> {
+                    System.out.println("User not found: " + username);
+                    return new UsernameNotFoundException("User not found");
+                });
     }
 
-    // Optional helper to return Optional
     public Optional<UserEntity> getUserByUsernameOptional(String username) {
+        System.out.println("Checking optional user: " + username);
         return userRepository.findByUsername(username);
     }
 
     public List<UserEntity> getAllUsers() {
+        System.out.println("Retrieving all users");
         return userRepository.findAll();
     }
 
     public Optional<UserEntity> getUserById(Long id) {
+        System.out.println("Getting user by ID: " + id);
         return userRepository.findById(id);
     }
 
     public UserEntity saveUser(UserEntity user) {
+        System.out.println("Saving user: " + user.getUsername());
         if (user.getUsername() == null || user.getUsername().trim().isEmpty())
             throw new IllegalArgumentException("Username cannot be empty");
         if (user.getEmail() == null || user.getEmail().trim().isEmpty())
@@ -48,6 +59,7 @@ public class UserService implements UserDetailsService {
         user.setEmail(user.getEmail().substring(0, Math.min(100, user.getEmail().length())));
 
         if (user.getPassword() != null && !user.getPassword().isEmpty() && !user.getPassword().startsWith("$2")) {
+            System.out.println("Encoding password for user: " + user.getUsername());
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
@@ -55,6 +67,7 @@ public class UserService implements UserDetailsService {
     }
 
     public void deleteUser(Long id) {
+        System.out.println("Deleting user ID: " + id);
         userRepository.deleteById(id);
     }
 
