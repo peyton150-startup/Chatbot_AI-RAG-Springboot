@@ -1,3 +1,4 @@
+package com.harmony.chatbot.theme;
 
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserService;
@@ -5,75 +6,78 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-@@ -16,51 +17,51 @@ public class ChatbotThemeService {
+import java.io.File;
+import java.io.IOException;
+import java.util.Optional;
+
+@Service
+public class ChatbotThemeService {
+
+    private final ChatbotThemeRepository repository;
     private final UserService userService;
     private final String uploadDir = "uploads/avatar/";
 
-    public ChatbotThemeService(ChatbotThemeRepository repository,
-                               UserService userService) {
     public ChatbotThemeService(ChatbotThemeRepository repository, UserService userService) {
         this.repository = repository;
         this.userService = userService;
 
-        // Ensure uploads folder exists
         // Ensure upload directory exists
         File dir = new File(uploadDir);
         if (!dir.exists()) dir.mkdirs();
     }
 
     /**
-     * Get the theme for the currently logged-in user.
-     * If the user has no theme, create a default one for them.
      * Retrieves the theme for the currently logged-in user.
-     * If no theme exists, creates a default one.
+     * If no theme exists, creates a default one and saves it.
+     *
+     * @return ChatbotThemeEntity for the current user
      */
-    public Theme getThemeForCurrentUser() {
-        UserEntity currentUser = userService.getCurrentUser();
-        Optional<Theme> themeOpt = repository.findByUserId(currentUser.getId());
     public ChatbotThemeEntity getThemeForCurrentUser() {
+        // Get currently authenticated username
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserEntity user = userService.getUserByUsername(username).orElseThrow();
+        UserEntity user = userService.getUserByUsername(username)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
-        Optional<ChatbotThemeEntity> themeOpt = repository.findByUserId(user.getId());
-        if (themeOpt.isPresent()) {
-            return themeOpt.get();
-        } else {
-            Theme defaultTheme = new Theme();
-            defaultTheme.setUser(currentUser);
-            return repository.save(defaultTheme);
-            ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
-            newTheme.setUser(user);
-            return repository.save(newTheme);
-        }
+        // Look for existing theme
+        return repository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    // Create default theme if none exists
+                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
+                    newTheme.setUser(user);
+                    newTheme.setHeaderColor("#ffffff");    // default header color
+                    newTheme.setBackgroundColor("#f5f5f5"); // default background
+                    newTheme.setTextColor("#000000");       // default text
+                    newTheme.setIconColor("#000000");       // default icon
+                    return repository.save(newTheme);
+                });
     }
 
     /**
-     * Update the theme for the currently logged-in user.
-     * Updates the theme for the current user, including optional avatar upload
+     * Updates the theme for the currently logged-in user, optionally updating the avatar.
+     *
+     * @param updatedTheme The new theme values to save
+     * @param avatarFile   Optional avatar file to upload
+     * @return Updated ChatbotThemeEntity
+     * @throws IOException if avatar upload fails
      */
-    public Theme updateThemeForCurrentUser(Theme newTheme, MultipartFile avatarFile) throws IOException {
-        Theme current = getThemeForCurrentUser();
     public ChatbotThemeEntity updateTheme(ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
         ChatbotThemeEntity currentTheme = getThemeForCurrentUser();
 
-        current.setHeaderColor(newTheme.getHeaderColor());
-        current.setBackgroundColor(newTheme.getBackgroundColor());
-        current.setTextColor(newTheme.getTextColor());
-        current.setIconColor(newTheme.getIconColor());
+        // Update theme colors
         currentTheme.setHeaderColor(updatedTheme.getHeaderColor());
         currentTheme.setBackgroundColor(updatedTheme.getBackgroundColor());
         currentTheme.setTextColor(updatedTheme.getTextColor());
         currentTheme.setIconColor(updatedTheme.getIconColor());
 
+        // Handle avatar file upload if present
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
             File file = new File(uploadDir + filename);
             avatarFile.transferTo(file);
-            current.setAvatarFilename(filename);
             currentTheme.setAvatarFilename(filename);
         }
 
-        return repository.save(current);
+        // Save updated theme
         return repository.save(currentTheme);
     }
 }
