@@ -12,9 +12,9 @@ public class Theme {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", unique = true)
-    private UserEntity user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;  // links theme to specific admin
 
     @Column(nullable = false)
     private String headerColor = "#b46a8c";
@@ -38,11 +38,9 @@ public class Theme {
     private Instant updatedAt = Instant.now();
 
     @PreUpdate
-    public void onUpdate() {
-        updatedAt = Instant.now();
-    }
+    public void onUpdate() { updatedAt = Instant.now(); }
 
-    // Getters and setters
+    // Getters & setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
