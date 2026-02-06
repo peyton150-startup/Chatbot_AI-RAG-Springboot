@@ -21,11 +21,13 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        System.out.println("Initializing BCryptPasswordEncoder");
         return new BCryptPasswordEncoder();
     }
 
     @Bean
     public DaoAuthenticationProvider authProvider() {
+        System.out.println("Setting up DaoAuthenticationProvider with UserService: " + userService);
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userService); // uses loadUserByUsername
         provider.setPasswordEncoder(passwordEncoder());
@@ -35,19 +37,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable() // Disable only for testing
+            .csrf().disable()
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/admin/**").hasRole("ADMIN") // matches ROLE_ADMIN
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().permitAll()
             )
             .formLogin(form -> form
-                .loginPage("/login") // must have a controller/view for /login
+                .loginPage("/login")
                 .defaultSuccessUrl("/admin", true)
                 .permitAll()
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
+            )
+            .exceptionHandling(ex -> ex
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    System.out.println("Access denied for user: " + request.getUserPrincipal());
+                    accessDeniedException.printStackTrace();
+                    response.sendError(403, "Access Denied");
+                })
             );
 
         return http.build();
