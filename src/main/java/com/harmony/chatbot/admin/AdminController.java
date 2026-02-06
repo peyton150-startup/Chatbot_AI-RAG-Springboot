@@ -2,7 +2,7 @@ package com.harmony.chatbot.admin;
 
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserService;
-import com.harmony.chatbot.theme.ChatbotThemeEntity;
+import com.harmony.chatbot.theme.Theme;
 import com.harmony.chatbot.theme.ChatbotThemeService;
 
 import jakarta.validation.Valid;
@@ -25,21 +25,23 @@ public class AdminController {
         this.themeService = themeService;
     }
 
+    // Admin dashboard
     @GetMapping
     public String adminHome(Model model) {
         model.addAttribute("users", userService.getAllUsers());
         model.addAttribute("user", new UserEntity());
-        model.addAttribute("theme", themeService.getTheme());
+        model.addAttribute("theme", themeService.getThemeForCurrentUser());
         return "admin";
     }
 
+    // Add or update a user
     @PostMapping("/users")
     public String createUser(@ModelAttribute("user") @Valid UserEntity user,
                              BindingResult result,
                              Model model) {
         if (result.hasErrors()) {
             model.addAttribute("users", userService.getAllUsers());
-            model.addAttribute("theme", themeService.getTheme());
+            model.addAttribute("theme", themeService.getThemeForCurrentUser());
             return "admin";
         }
 
@@ -47,12 +49,14 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+    // Delete user
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return "redirect:/admin";
     }
 
+    // Edit user
     @PostMapping("/users/{id}/edit")
     public String editUser(@PathVariable Long id,
                            @ModelAttribute UserEntity updatedUser) {
@@ -71,12 +75,13 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+    // Update theme for logged-in admin
     @PostMapping("/theme")
-    public String updateTheme(@ModelAttribute ChatbotThemeEntity theme,
+    public String updateTheme(@ModelAttribute Theme theme,
                               @RequestParam(required = false) MultipartFile avatar) {
 
         try {
-            themeService.updateTheme(theme, avatar);
+            themeService.updateThemeForCurrentUser(theme, avatar);
         } catch (Exception e) {
             e.printStackTrace();
         }
