@@ -11,6 +11,10 @@
             --chat-bg: [[${theme.backgroundColor}]];
             --chat-text: [[${theme.textColor}]];
             --chat-icon: [[${theme.iconColor}]];
+
+            --chat-chip-bg: [[${theme.chipBackgroundColor}]]; 
+            --chat-chip-hover: [[${theme.chipHoverColor}]]; 
+            --chat-chip-border: [[${theme.chipBorderColor}]]; 
         }
 
         html, body {
@@ -62,7 +66,8 @@
             align-items: center;
         }
 
-        #chatHeader img.chatbot-avatar {
+        #chatHeader img.chatbot-avatar,
+        #chatBubble img.chatbot-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -77,24 +82,24 @@
             border-bottom: 1px solid #eee;
         }
 
-        .chip {
+        #chatWindow .chip {
             padding: 6px 12px;
             border-radius: 16px;
-            border: 1px solid #e5d6de;
-            background: #fdfafb;
+            border: 1px solid var(--chat-chip-border);
+            background: var(--chat-chip-bg);
             font-size: 12px;
             cursor: pointer;
         }
 
-        .chip:hover {
-            background: #f1e6ec;
+        #chatWindow .chip:hover {
+            background: var(--chat-chip-hover);
         }
 
         #chatMessages {
             flex: 1;
             padding: 12px;
             overflow-y: auto;
-            background: #fdfafb;
+            background: var(--chat-bg);
             color: var(--chat-text);
             font-size: 13px;
         }
@@ -180,7 +185,6 @@
 
 <script>
     const API = "/api/rag-chat";
-
     const bubble = document.getElementById("chatBubble");
     const windowBox = document.getElementById("chatWindow");
     const closeBtn = document.getElementById("closeChat");
@@ -188,15 +192,8 @@
     const input = document.getElementById("input");
     const send = document.getElementById("send");
 
-    bubble.onclick = () => {
-        windowBox.style.display = "flex";
-        bubble.style.display = "none";
-    };
-
-    closeBtn.onclick = () => {
-        windowBox.style.display = "none";
-        bubble.style.display = "flex";
-    };
+    bubble.onclick = () => { windowBox.style.display = "flex"; bubble.style.display = "none"; };
+    closeBtn.onclick = () => { windowBox.style.display = "none"; bubble.style.display = "flex"; };
 
     function addMsg(text, cls) {
         const div = document.createElement("div");
@@ -232,20 +229,8 @@
     }
 
     send.onclick = () => sendMsg();
-
-    input.addEventListener("keydown", e => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            sendMsg();
-        }
-    });
-
-    document.querySelectorAll(".chip").forEach(chip => {
-        chip.onclick = () => {
-            sendMsg(chip.textContent);
-            document.getElementById("suggestions").style.display = "none";
-        };
-    });
+    input.addEventListener("keydown", e => { if(e.key==="Enter"){e.preventDefault();sendMsg();} });
+    document.querySelectorAll(".chip").forEach(chip => { chip.onclick = () => { sendMsg(chip.textContent); document.getElementById("suggestions").style.display = "none"; }; });
 </script>
 
 </body>
