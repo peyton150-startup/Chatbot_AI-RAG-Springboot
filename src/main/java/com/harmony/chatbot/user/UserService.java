@@ -22,15 +22,23 @@ public class UserService implements UserDetailsService {
     @Override
     public UserEntity loadUserByUsername(String username) throws UsernameNotFoundException {
         System.out.println("Attempting to load user by username: " + username);
-        return userRepository.findByUsername(username)
-                .map(u -> {
-                    System.out.println("User found: " + u.getUsername() + ", role: " + u.getRole());
-                    return u;
-                })
+
+        UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> {
                     System.out.println("User not found: " + username);
                     return new UsernameNotFoundException("User not found");
                 });
+
+        // 🔴 TEMPORARY ROLE NORMALIZATION FIX
+        // Converts ROLE_ADMIN -> ADMIN, ROLE_USER -> USER
+        if (user.getRole() != null && user.getRole().startsWith("ROLE_")) {
+            String normalizedRole = user.getRole().replace("ROLE_", "");
+            System.out.println("Normalizing role from " + user.getRole() + " to " + normalizedRole);
+            user.setRole(normalizedRole);
+        }
+
+        System.out.println("User loaded: " + user.getUsername() + ", authority: " + user.getRole());
+        return user;
     }
 
     public Optional<UserEntity> getUserByUsernameOptional(String username) {
@@ -50,15 +58,21 @@ public class UserService implements UserDetailsService {
 
     public UserEntity saveUser(UserEntity user) {
         System.out.println("Saving user: " + user.getUsername());
-        if (user.getUsername() == null || user.getUsername().trim().isEmpty())
+
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             throw new IllegalArgumentException("Username cannot be empty");
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty())
+        }
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
             throw new IllegalArgumentException("Email cannot be empty");
+        }
 
         user.setUsername(user.getUsername().substring(0, Math.min(50, user.getUsername().length())));
         user.setEmail(user.getEmail().substring(0, Math.min(100, user.getEmail().length())));
 
-        if (user.getPassword() != null && !user.getPassword().isEmpty() && !user.getPassword().startsWith("$2")) {
+        if (user.getPassword() != null &&
+            !user.getPassword().isEmpty() &&
+            !user.getPassword().startsWith("$2")) {
+
             System.out.println("Encoding password for user: " + user.getUsername());
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
