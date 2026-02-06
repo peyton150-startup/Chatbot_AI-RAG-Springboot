@@ -37,7 +37,10 @@ public class AdminController {
         model.addAttribute("editMode", false);
 
         // Load current user's theme
-        ChatbotThemeEntity theme = themeService.getThemeForCurrentUser();
+        UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
+        ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
+                .orElseGet(() -> themeService.getThemeForCurrentUser());
+
         model.addAttribute("theme", theme);
 
         return "admin";
@@ -51,7 +54,7 @@ public class AdminController {
                 existing.setUsername(user.getUsername());
                 existing.setEmail(user.getEmail());
                 if (user.getPassword() != null && !user.getPassword().isBlank()) {
-                    existing.setPassword(user.getPassword()); // hash automatically in UserService
+                    existing.setPassword(user.getPassword()); // hash in UserService
                 }
                 existing.setRole(user.getRole());
                 userService.saveUser(existing);
@@ -64,20 +67,13 @@ public class AdminController {
     }
 
     @PostMapping("/theme")
-    public String saveTheme(@RequestParam(required = false) MultipartFile avatarFile,
-                            @AuthenticationPrincipal UserDetails currentUser,
-                            @ModelAttribute ChatbotThemeEntity themeForm) throws IOException {
+    public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
+                            @ModelAttribute ChatbotThemeEntity themeForm,
+                            @RequestParam(required = false) MultipartFile avatarFile) throws IOException {
 
-        ChatbotThemeEntity updatedTheme = themeService.updateTheme(themeForm, avatarFile);
-        return "redirect:/admin";
-    }
+        UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
+        themeService.updateThemeForUser(user.getId(), themeForm, avatarFile);
 
-    @PostMapping("/theme/user/{userId}")
-    public String saveThemeForUser(@PathVariable Long userId,
-                                   @RequestParam(required = false) MultipartFile avatarFile,
-                                   @ModelAttribute ChatbotThemeEntity themeForm) throws IOException {
-
-        themeService.updateThemeForUser(userId, themeForm, avatarFile);
         return "redirect:/admin";
     }
 }
