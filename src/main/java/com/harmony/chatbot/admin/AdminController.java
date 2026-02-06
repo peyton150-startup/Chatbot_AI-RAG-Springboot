@@ -2,10 +2,11 @@ package com.harmony.chatbot.admin;
 
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserService;
-import com.harmony.chatbot.theme.Theme;
 import com.harmony.chatbot.theme.ChatbotThemeService;
+import com.harmony.chatbot.theme.ChatbotThemeEntity;
 
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -27,21 +28,29 @@ public class AdminController {
 
     // Admin dashboard
     @GetMapping
-    public String adminHome(Model model) {
+    public String adminHome(Model model, Authentication auth) {
+        UserEntity currentAdmin = userService.getUserByUsername(auth.getName())
+                                             .orElseThrow();
+
         model.addAttribute("users", userService.getAllUsers());
         model.addAttribute("user", new UserEntity());
-        model.addAttribute("theme", themeService.getThemeForCurrentUser());
+
+        // Load theme for current admin
+        model.addAttribute("theme", themeService.getThemeForUser(currentAdmin.getId()));
         return "admin";
     }
 
-    // Add or update a user
+    // Create or edit user
     @PostMapping("/users")
     public String createUser(@ModelAttribute("user") @Valid UserEntity user,
                              BindingResult result,
-                             Model model) {
+                             Model model,
+                             Authentication auth) {
+
         if (result.hasErrors()) {
             model.addAttribute("users", userService.getAllUsers());
-            model.addAttribute("theme", themeService.getThemeForCurrentUser());
+            model.addAttribute("theme", themeService.getThemeForUser(
+                    userService.getUserByUsername(auth.getName()).orElseThrow().getId()));
             return "admin";
         }
 
@@ -49,14 +58,12 @@ public class AdminController {
         return "redirect:/admin";
     }
 
-    // Delete user
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return "redirect:/admin";
     }
 
-    // Edit user
     @PostMapping("/users/{id}/edit")
     public String editUser(@PathVariable Long id,
                            @ModelAttribute UserEntity updatedUser) {
@@ -75,13 +82,16 @@ public class AdminController {
         return "redirect:/admin";
     }
 
-    // Update theme for logged-in admin
+    // Update chatbot theme for current admin
     @PostMapping("/theme")
-    public String updateTheme(@ModelAttribute Theme theme,
-                              @RequestParam(required = false) MultipartFile avatar) {
+    public String updateTheme(@ModelAttribute ChatbotThemeEntity theme,
+                              @RequestParam(required = false) MultipartFile avatar,
+                              Authentication auth) {
 
         try {
-            themeService.updateThemeForCurrentUser(theme, avatar);
+            UserEntity currentAdmin = userService.getUserByUsername(auth.getName())
+                                                 .orElseThrow();
+            themeService.updateThemeForUser(currentAdmin.getId(), theme, avatar);
         } catch (Exception e) {
             e.printStackTrace();
         }
