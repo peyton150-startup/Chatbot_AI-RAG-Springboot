@@ -1,83 +1,53 @@
-package com.harmony.chatbot.admin;
+package com.harmony.chatbot.theme;
 
-import com.harmony.chatbot.theme.ChatbotThemeEntity;
-import com.harmony.chatbot.theme.ChatbotThemeService;
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserService;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.Optional;
 
-@Controller
-@RequestMapping("/admin")
-public class AdminController {
+@Service
+public class ChatbotThemeService {
 
+    private final ChatbotThemeRepository repository;
     private final UserService userService;
-    private final ChatbotThemeService themeService;
+    private final String uploadDir = "uploads/avatar/";
 
-    public AdminController(UserService userService, ChatbotThemeService themeService) {
+    public ChatbotThemeService(ChatbotThemeRepository repository, UserService userService) {
+        this.repository = repository;
         this.userService = userService;
-        this.themeService = themeService;
+
+        // Ensure upload directory exists
+        File dir = new File(uploadDir);
+        if (!dir.exists()) dir.mkdirs();
     }
 
-    @GetMapping
-    public String adminDashboard(@AuthenticationPrincipal UserDetails currentUser, Model model) {
-        // Load all users for admin table
-        List<UserEntity> users = userService.getAllUsers();
-        model.addAttribute("users", users);
+    /**
+     * Retrieves the theme for the currently logged-in user.
+     * If no theme exists, creates a default one.
+     */
+    public ChatbotThemeEntity getThemeForCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserEntity user = userService.getUserByUsernameOptional(username).orElseThrow();
 
-        // New user object for Add/Edit form
-        model.addAttribute("user", new UserEntity());
-        model.addAttribute("editMode", false);
-
-        // Load current user's theme
-        ChatbotThemeEntity theme = themeService.getThemeForCurrentUser();
-        model.addAttribute("theme", theme);
-
-        return "admin";
+        return repository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
+                    newTheme.setUser(user);
+                    return repository.save(newTheme);
+                });
     }
 
-    @PostMapping("/users")
-    public String saveUser(@ModelAttribute UserEntity user) {
-        if (user.getId() != null) {
-            // Editing existing user
-            userService.getUserById(user.getId()).ifPresent(existing -> {
-                existing.setUsername(user.getUsername());
-                existing.setEmail(user.getEmail());
-                if (user.getPassword() != null && !user.getPassword().isBlank()) {
-                    existing.setPassword(user.getPassword()); // hash automatically in UserService
-                }
-                existing.setRole(user.getRole());
-                userService.saveUser(existing);
-            });
-        } else {
-            // New user
-            userService.saveUser(user);
-        }
-        return "redirect:/admin";
-    }
+    /**
+     * Updates the theme for the current user, including optional avatar upload.
+     */
+    public ChatbotThemeEntity updateTheme(ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
+        ChatbotThemeEntity currentTheme = getThemeForCurrentUser();
 
-    @PostMapping("/theme")
-    public String saveTheme(@RequestParam(required = false) MultipartFile avatarFile,
-                            @AuthenticationPrincipal UserDetails currentUser,
-                            @ModelAttribute ChatbotThemeEntity themeForm) throws IOException {
-
-        ChatbotThemeEntity updatedTheme = themeService.updateTheme(themeForm, avatarFile);
-        return "redirect:/admin";
-    }
-
-    @PostMapping("/theme/user/{userId}")
-    public String saveThemeForUser(@PathVariable Long userId,
-                                   @RequestParam(required = false) MultipartFile avatarFile,
-                                   @ModelAttribute ChatbotThemeEntity themeForm) throws IOException {
-
-        themeService.updateThemeForUser(userId, themeForm, avatarFile);
-        return "redirect:/admin";
-    }
-}
+        currentTheme.setHeaderColor(updatedTheme.getHeaderColor());
+        currentTheme.setBackgroundColor(updatedTheme.getBackgroundColor());
+        currentTheme.setTextColor(upda
