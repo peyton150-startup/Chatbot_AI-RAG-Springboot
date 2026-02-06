@@ -1,6 +1,6 @@
 package com.harmony.chatbot.admin;
 
-import com.harmony.chatbot.theme.ChatbotThemeEntity;
+import com.harmony.chatbot.theme.Theme;
 import com.harmony.chatbot.theme.ChatbotThemeService;
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserService;
@@ -39,7 +39,7 @@ public class AdminController {
 
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
         System.out.println("Loaded admin dashboard for user: " + user.getUsername());
-        ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
+        Theme theme = themeService.getThemeForUser(user.getId())
                 .orElseGet(() -> themeService.getThemeForCurrentUser());
         model.addAttribute("theme", theme);
 
@@ -68,7 +68,7 @@ public class AdminController {
 
     @PostMapping("/theme")
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
-                            @ModelAttribute ChatbotThemeEntity themeForm,
+                            @ModelAttribute Theme themeForm,
                             @RequestParam(required = false) MultipartFile avatarFile) throws IOException {
 
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
