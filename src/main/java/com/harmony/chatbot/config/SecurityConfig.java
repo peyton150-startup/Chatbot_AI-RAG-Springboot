@@ -27,7 +27,7 @@ public class SecurityConfig {
     @Bean
     public DaoAuthenticationProvider authProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userService);
+        provider.setUserDetailsService(userService); // uses loadUserByUsername
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
@@ -35,13 +35,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()
+            .csrf().disable() // Disable only for testing
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/admin/**").hasAuthority("ADMIN") // changed from hasRole
+                .requestMatchers("/admin/**").hasRole("ADMIN") // matches ROLE_ADMIN
                 .anyRequest().permitAll()
             )
             .formLogin(form -> form
-                .loginPage("/login")
+                .loginPage("/login") // must have a controller/view for /login
                 .defaultSuccessUrl("/admin", true)
                 .permitAll()
             )
