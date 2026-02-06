@@ -1,33 +1,36 @@
-# Use a stable Maven + JDK image
+# -----------------------------
+# Build stage
+# -----------------------------
 FROM maven:3.9.4-eclipse-temurin-17 AS build
 
-# Set working directory
 WORKDIR /app
 
-# Step 1: Copy only pom.xml to leverage Docker cache
+# Step 1: Copy pom.xml first for caching dependencies
 COPY pom.xml .
 
-# Step 2: Pre-download all dependencies
+# Step 2: Pre-download dependencies
 RUN mvn dependency:go-offline -B
 
-# Step 3: Copy source code
+# Step 3: Copy the full source code
 COPY src ./src
 
-# Step 4: Build the project (clean install)
-RUN mvn clean install -B -DskipTests -X
+# Step 4: Build the project
+# Add memory options for large builds
+ENV MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=512m"
+RUN mvn clean install -B -DskipTests
 
 # -----------------------------
-# Optional: Create a smaller runtime image
+# Runtime stage
 # -----------------------------
 FROM eclipse-temurin:17-jdk-jammy
 
 WORKDIR /app
 
-# Copy built JAR from previous stage
+# Copy the JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose default Spring Boot port
+# Expose the default Spring Boot port
 EXPOSE 8080
 
-# Command to run the app
-ENTRYPOINT ["java","-jar","app.jar"]
+# Run the app
+ENTRYPOINT ["java", "-jar", "app.jar"]
