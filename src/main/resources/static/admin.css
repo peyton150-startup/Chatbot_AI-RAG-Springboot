@@ -16,9 +16,9 @@ h1 {
     color: #38bdf8;
 }
 
-input[type="email"] {
+input[type="email"], input[type="text"], input[type="password"], select {
     padding: 10px;
-    width: 70%;
+    width: 100%;
     border-radius: 6px;
     border: none;
 }
