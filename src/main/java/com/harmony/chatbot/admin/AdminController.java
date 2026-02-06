@@ -1,7 +1,7 @@
 package com.harmony.chatbot.controller;
 
 import com.harmony.chatbot.theme.Theme;
-import com.harmony.chatbot.theme.ThemeRepository;
+import com.harmony.chatbot.theme.ChatbotThemeRepository;  // Updated import
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,16 +11,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
 
     private final UserRepository userRepository;
-    private final ThemeRepository themeRepository;
+    private final ChatbotThemeRepository themeRepository; // Updated reference
 
-    public AdminController(UserRepository userRepository, ThemeRepository themeRepository) {
+    public AdminController(UserRepository userRepository, ChatbotThemeRepository themeRepository) {
         this.userRepository = userRepository;
         this.themeRepository = themeRepository;
     }
