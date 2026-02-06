@@ -28,19 +28,12 @@ public class AdminController {
 
     @GetMapping
     public String adminDashboard(@AuthenticationPrincipal UserDetails currentUser, Model model) {
-        System.out.println("Accessing /admin with principal: " + currentUser);
-        if (currentUser != null) System.out.println("Principal username: " + currentUser.getUsername());
-
         List<UserEntity> users = userService.getAllUsers();
         model.addAttribute("users", users);
-
         model.addAttribute("user", new UserEntity());
         model.addAttribute("editMode", false);
 
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
-        System.out.println("Loaded admin dashboard for user: " + user.getUsername());
-
-        // Make sure we only use ChatbotThemeEntity
         ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
                 .orElseGet(() -> themeService.getThemeForCurrentUser());
         model.addAttribute("theme", theme);
@@ -50,14 +43,12 @@ public class AdminController {
 
     @PostMapping("/users")
     public String saveUser(@ModelAttribute UserEntity user) {
-        System.out.println("POST /admin/users called for user: " + user.getUsername());
         if (user.getId() != null) {
             userService.getUserById(user.getId()).ifPresent(existing -> {
                 existing.setUsername(user.getUsername());
                 existing.setEmail(user.getEmail());
                 if (user.getPassword() != null && !user.getPassword().isBlank()) {
                     existing.setPassword(user.getPassword());
-                    System.out.println("Updating password for user: " + existing.getUsername());
                 }
                 existing.setRole(user.getRole());
                 userService.saveUser(existing);
@@ -72,11 +63,8 @@ public class AdminController {
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
                             @RequestParam(required = false) MultipartFile avatarFile) throws IOException {
-
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
-        System.out.println("Updating theme for user: " + user.getUsername() + ", ID: " + user.getId());
         themeService.updateThemeForUser(user.getId(), themeForm, avatarFile);
-
         return "redirect:/admin";
     }
 }
