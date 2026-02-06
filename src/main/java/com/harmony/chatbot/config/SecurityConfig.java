@@ -27,9 +27,9 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authProvider() {
-        System.out.println("Setting up DaoAuthenticationProvider with UserService: " + userService);
+        System.out.println("Setting up DaoAuthenticationProvider with UserService");
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userService); // uses loadUserByUsername
+        provider.setUserDetailsService(userService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
@@ -37,9 +37,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+                // IMPORTANT: authority, not role
+                .requestMatchers("/admin/**").hasAuthority("ADMIN")
                 .anyRequest().permitAll()
             )
             .formLogin(form -> form
@@ -50,11 +51,13 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
+                .permitAll()
             )
             .exceptionHandling(ex -> ex
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    System.out.println("Access denied for user: " + request.getUserPrincipal());
-                    accessDeniedException.printStackTrace();
+                .accessDeniedHandler((request, response, exception) -> {
+                    System.out.println("ACCESS DENIED");
+                    System.out.println("User: " + request.getUserPrincipal());
+                    exception.printStackTrace();
                     response.sendError(403, "Access Denied");
                 })
             );
