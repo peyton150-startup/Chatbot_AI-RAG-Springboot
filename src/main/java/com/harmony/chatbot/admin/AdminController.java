@@ -28,19 +28,19 @@ public class AdminController {
 
     @GetMapping
     public String adminDashboard(@AuthenticationPrincipal UserDetails currentUser, Model model) {
-        // Load all users for admin table
+        System.out.println("Accessing /admin with principal: " + currentUser);
+        if (currentUser != null) System.out.println("Principal username: " + currentUser.getUsername());
+
         List<UserEntity> users = userService.getAllUsers();
         model.addAttribute("users", users);
 
-        // New user object for Add/Edit form
         model.addAttribute("user", new UserEntity());
         model.addAttribute("editMode", false);
 
-        // Load current user's theme
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
+        System.out.println("Loaded admin dashboard for user: " + user.getUsername());
         ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
                 .orElseGet(() -> themeService.getThemeForCurrentUser());
-
         model.addAttribute("theme", theme);
 
         return "admin";
@@ -48,19 +48,19 @@ public class AdminController {
 
     @PostMapping("/users")
     public String saveUser(@ModelAttribute UserEntity user) {
+        System.out.println("POST /admin/users called for user: " + user.getUsername());
         if (user.getId() != null) {
-            // Editing existing user
             userService.getUserById(user.getId()).ifPresent(existing -> {
                 existing.setUsername(user.getUsername());
                 existing.setEmail(user.getEmail());
                 if (user.getPassword() != null && !user.getPassword().isBlank()) {
-                    existing.setPassword(user.getPassword()); // hash in UserService
+                    existing.setPassword(user.getPassword());
+                    System.out.println("Updating password for user: " + existing.getUsername());
                 }
                 existing.setRole(user.getRole());
                 userService.saveUser(existing);
             });
         } else {
-            // New user
             userService.saveUser(user);
         }
         return "redirect:/admin";
@@ -72,6 +72,7 @@ public class AdminController {
                             @RequestParam(required = false) MultipartFile avatarFile) throws IOException {
 
         UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
+        System.out.println("Updating theme for user: " + user.getUsername() + ", ID: " + user.getId());
         themeService.updateThemeForUser(user.getId(), themeForm, avatarFile);
 
         return "redirect:/admin";
