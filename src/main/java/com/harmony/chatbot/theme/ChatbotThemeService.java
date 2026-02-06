@@ -20,6 +20,7 @@ public class ChatbotThemeService {
     public ChatbotThemeService(ChatbotThemeRepository repository, UserService userService) {
         this.repository = repository;
         this.userService = userService;
+
         File dir = new File(uploadDir);
         if (!dir.exists()) dir.mkdirs();
         System.out.println("ChatbotThemeService initialized with uploadDir: " + uploadDir);
@@ -33,6 +34,16 @@ public class ChatbotThemeService {
 
         return repository.findByUserId(user.getId())
                 .orElseGet(() -> repository.save(createDefaultTheme(user)));
+    }
+
+    // NEW: Ensures a theme exists for a given userId
+    public ChatbotThemeEntity getOrCreateThemeForUser(Long userId) {
+        return repository.findByUserId(userId)
+                .orElseGet(() -> {
+                    UserEntity user = userService.getUserById(userId)
+                            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                    return repository.save(createDefaultTheme(user));
+                });
     }
 
     public ChatbotThemeEntity updateThemeForUser(Long userId, ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
