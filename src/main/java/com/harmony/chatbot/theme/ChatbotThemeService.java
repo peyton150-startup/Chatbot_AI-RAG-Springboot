@@ -4,45 +4,48 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.List;
 
 @Service
 public class ChatbotThemeService {
 
     private final ChatbotThemeRepository repository;
-    private static final String AVATAR_DIR = "uploads/avatar/";
+    private final String uploadDir = "uploads/avatar/";
 
     public ChatbotThemeService(ChatbotThemeRepository repository) {
         this.repository = repository;
+
+        // Create uploads folder if it doesn't exist
+        File dir = new File(uploadDir);
+        if (!dir.exists()) dir.mkdirs();
     }
 
-    public ChatbotThemeEntity getTheme() {
-        return repository.findAll()
-                .stream()
-                .findFirst()
-                .orElseGet(() -> repository.save(new ChatbotThemeEntity()));
+    public Theme getTheme() {
+        List<Theme> all = repository.findAll();
+        if (all.isEmpty()) {
+            Theme t = new Theme();
+            repository.save(t);
+            return t;
+        }
+        return all.get(0); // single global theme
     }
 
-    public void updateTheme(ChatbotThemeEntity updated,
-                            MultipartFile avatarFile) throws Exception {
+    public Theme updateTheme(Theme theme, MultipartFile avatarFile) throws IOException {
+        Theme current = getTheme();
 
-        ChatbotThemeEntity theme = getTheme();
-
-        theme.setHeaderColor(updated.getHeaderColor());
-        theme.setBackgroundColor(updated.getBackgroundColor());
-        theme.setTextColor(updated.getTextColor());
-        theme.setIconColor(updated.getIconColor());
+        current.setHeaderColor(theme.getHeaderColor());
+        current.setBackgroundColor(theme.getBackgroundColor());
+        current.setTextColor(theme.getTextColor());
+        current.setIconColor(theme.getIconColor());
 
         if (avatarFile != null && !avatarFile.isEmpty()) {
-            String filename = UUID.randomUUID() + "-" + avatarFile.getOriginalFilename();
-
-            File dir = new File(AVATAR_DIR);
-            if (!dir.exists()) dir.mkdirs();
-
-            avatarFile.transferTo(new File(dir, filename));
-            theme.setAvatarFilename(filename);
+            String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
+            File file = new File(uploadDir + filename);
+            avatarFile.transferTo(file);
+            current.setAvatarFilename(filename);
         }
 
-        repository.save(theme);
+        return repository.save(current);
     }
 }
