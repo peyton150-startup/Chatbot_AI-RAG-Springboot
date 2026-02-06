@@ -21,32 +21,22 @@ public class ChatbotThemeService {
         this.repository = repository;
         this.userService = userService;
 
-        // Ensure upload directory exists
         File dir = new File(uploadDir);
         if (!dir.exists()) dir.mkdirs();
     }
 
-    /**
-     * Retrieves the theme for the currently logged-in user.
-     * If no theme exists, creates a default one.
-     */
     public ChatbotThemeEntity getThemeForCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserEntity user = userService.getUserByUsername(username).orElseThrow();
+        UserEntity user = userService.getUserByUsernameOptional(username).orElseThrow();
 
-        Optional<ChatbotThemeEntity> themeOpt = repository.findByUserId(user.getId());
-        if (themeOpt.isPresent()) {
-            return themeOpt.get();
-        } else {
-            ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
-            newTheme.setUser(user);
-            return repository.save(newTheme);
-        }
+        return repository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
+                    newTheme.setUser(user);
+                    return repository.save(newTheme);
+                });
     }
 
-    /**
-     * Updates the theme for the current user, including optional avatar upload
-     */
     public ChatbotThemeEntity updateTheme(ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
         ChatbotThemeEntity currentTheme = getThemeForCurrentUser();
 
@@ -63,5 +53,34 @@ public class ChatbotThemeService {
         }
 
         return repository.save(currentTheme);
+    }
+
+    // New method: update theme by userId (used in AdminController)
+    public ChatbotThemeEntity updateThemeForUser(Long userId, ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
+        UserEntity user = userService.getUserById(userId).orElseThrow();
+        ChatbotThemeEntity theme = repository.findByUserId(userId)
+                .orElseGet(() -> {
+                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
+                    newTheme.setUser(user);
+                    return newTheme;
+                });
+
+        theme.setHeaderColor(updatedTheme.getHeaderColor());
+        theme.setBackgroundColor(updatedTheme.getBackgroundColor());
+        theme.setTextColor(updatedTheme.getTextColor());
+        theme.setIconColor(updatedTheme.getIconColor());
+
+        if (avatarFile != null && !avatarFile.isEmpty()) {
+            String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
+            File file = new File(uploadDir + filename);
+            avatarFile.transferTo(file);
+            theme.setAvatarFilename(filename);
+        }
+
+        return repository.save(theme);
+    }
+
+    public Optional<ChatbotThemeEntity> getThemeForUser(Long userId) {
+        return repository.findByUserId(userId);
     }
 }
