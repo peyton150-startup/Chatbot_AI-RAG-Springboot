@@ -14,6 +14,7 @@ public class ChatbotApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ChatbotApplication.class, args);
+        System.out.println("ChatbotApplication started");
     }
 
     @Bean
@@ -22,11 +23,11 @@ public class ChatbotApplication {
             String port = System.getenv("PORT");
             if (port != null) {
                 factory.setPort(Integer.parseInt(port));
+                System.out.println("Setting server port from environment: " + port);
             }
         };
     }
 
-    // Seed an initial admin user
     @Bean
     CommandLineRunner initAdmin(UserService userService) {
         return args -> {
@@ -35,10 +36,12 @@ public class ChatbotApplication {
                 UserEntity admin = new UserEntity();
                 admin.setUsername(adminUsername);
                 admin.setEmail("admin@example.com");
-                admin.setPassword("admin123"); // will be hashed automatically
-                admin.setRole("ROLE_ADMIN");   // add ROLE_ADMIN field in UserEntity if not already
+                admin.setPassword("admin123"); // hashed in UserService
+                admin.setRole("ADMIN");
                 userService.saveUser(admin);
                 System.out.println("Admin user created: username=admin, password=admin123");
+            } else {
+                System.out.println("Admin user already exists");
             }
         };
     }
