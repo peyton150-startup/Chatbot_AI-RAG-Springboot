@@ -26,21 +26,17 @@ public class AdminController {
         this.themeService = themeService;
     }
 
-    // Admin dashboard
     @GetMapping
     public String adminHome(Model model, Authentication auth) {
-        UserEntity currentAdmin = userService.getUserByUsername(auth.getName())
+        UserEntity currentAdmin = userService.getUserByUsernameOptional(auth.getName())
                                              .orElseThrow();
 
         model.addAttribute("users", userService.getAllUsers());
         model.addAttribute("user", new UserEntity());
-
-        // Load theme for current admin
-        model.addAttribute("theme", themeService.getThemeForUser(currentAdmin.getId()));
+        model.addAttribute("theme", themeService.getThemeForUser(currentAdmin.getId()).orElse(null));
         return "admin";
     }
 
-    // Create or edit user
     @PostMapping("/users")
     public String createUser(@ModelAttribute("user") @Valid UserEntity user,
                              BindingResult result,
@@ -50,7 +46,7 @@ public class AdminController {
         if (result.hasErrors()) {
             model.addAttribute("users", userService.getAllUsers());
             model.addAttribute("theme", themeService.getThemeForUser(
-                    userService.getUserByUsername(auth.getName()).orElseThrow().getId()));
+                    userService.getUserByUsernameOptional(auth.getName()).orElseThrow().getId()).orElse(null));
             return "admin";
         }
 
@@ -82,14 +78,13 @@ public class AdminController {
         return "redirect:/admin";
     }
 
-    // Update chatbot theme for current admin
     @PostMapping("/theme")
     public String updateTheme(@ModelAttribute ChatbotThemeEntity theme,
                               @RequestParam(required = false) MultipartFile avatar,
                               Authentication auth) {
 
         try {
-            UserEntity currentAdmin = userService.getUserByUsername(auth.getName())
+            UserEntity currentAdmin = userService.getUserByUsernameOptional(auth.getName())
                                                  .orElseThrow();
             themeService.updateThemeForUser(currentAdmin.getId(), theme, avatar);
         } catch (Exception e) {
