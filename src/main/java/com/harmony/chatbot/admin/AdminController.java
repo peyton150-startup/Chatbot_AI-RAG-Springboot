@@ -28,14 +28,18 @@ public class AdminController {
 
     @GetMapping
     public String adminDashboard(@AuthenticationPrincipal UserDetails currentUser, Model model) {
+        // Users list for table
         List<UserEntity> users = userService.getAllUsers();
         model.addAttribute("users", users);
         model.addAttribute("user", new UserEntity());
         model.addAttribute("editMode", false);
 
-        UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
-        ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
-                .orElseGet(() -> themeService.getThemeForCurrentUser());
+        // Current logged-in user
+        UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername())
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+
+        // Ensure every user has a theme
+        ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(user.getId());
         model.addAttribute("theme", theme);
 
         return "admin";
@@ -63,7 +67,10 @@ public class AdminController {
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
                             @RequestParam(name = "avatar", required = false) MultipartFile avatarFile) throws IOException {
-        UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername()).orElseThrow();
+
+        UserEntity user = userService.getUserByUsernameOptional(currentUser.getUsername())
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+
         themeService.updateThemeForUser(user.getId(), themeForm, avatarFile);
         return "redirect:/admin";
     }
