@@ -1,43 +1,45 @@
 package com.harmony.chatbot.theme;
 
+import com.harmony.chatbot.user.UserEntity;
+import com.harmony.chatbot.user.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 @Service
 public class ChatbotThemeService {
 
     private final ChatbotThemeRepository repository;
+    private final UserService userService;
     private final String uploadDir = "uploads/avatar/";
 
-    public ChatbotThemeService(ChatbotThemeRepository repository) {
+    public ChatbotThemeService(ChatbotThemeRepository repository,
+                               UserService userService) {
         this.repository = repository;
+        this.userService = userService;
 
-        // Create uploads folder if it doesn't exist
         File dir = new File(uploadDir);
         if (!dir.exists()) dir.mkdirs();
     }
 
-    public Theme getTheme() {
-        List<Theme> all = repository.findAll();
-        if (all.isEmpty()) {
-            Theme t = new Theme();
-            repository.save(t);
-            return t;
-        }
-        return all.get(0); // single global theme
+    public Theme getThemeForCurrentUser() {
+        UserEntity currentUser = userService.getLoggedInUser();
+        return repository.findByUser(currentUser).orElseGet(() -> {
+            Theme theme = new Theme();
+            theme.setUser(currentUser);
+            return repository.save(theme);
+        });
     }
 
-    public Theme updateTheme(Theme theme, MultipartFile avatarFile) throws IOException {
-        Theme current = getTheme();
+    public Theme updateThemeForCurrentUser(Theme themeData, MultipartFile avatarFile) throws IOException {
+        Theme current = getThemeForCurrentUser();
 
-        current.setHeaderColor(theme.getHeaderColor());
-        current.setBackgroundColor(theme.getBackgroundColor());
-        current.setTextColor(theme.getTextColor());
-        current.setIconColor(theme.getIconColor());
+        current.setHeaderColor(themeData.getHeaderColor());
+        current.setBackgroundColor(themeData.getBackgroundColor());
+        current.setTextColor(themeData.getTextColor());
+        current.setIconColor(themeData.getIconColor());
 
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
