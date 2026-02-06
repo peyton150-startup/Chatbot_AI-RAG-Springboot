@@ -16,7 +16,7 @@ COPY src ./src
 
 # Step 4: Build the project
 # Add memory options for large builds
-ENV MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=512m"
+ENV MAVEN_OPTS="-Xmx1024m" 
 RUN mvn clean install -B -DskipTests -X
 
 # -----------------------------
