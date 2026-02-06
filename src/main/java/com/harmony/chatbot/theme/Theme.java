@@ -32,15 +32,24 @@ public class Theme {
     private String avatarFilename;
 
     @Column(nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 
     @Column(nullable = false)
-    private Instant updatedAt = Instant.now();
+    private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = Instant.now();
+        if (updatedAt == null) updatedAt = Instant.now();
+    }
 
     @PreUpdate
-    public void onUpdate() { updatedAt = Instant.now(); }
+    public void onUpdate() {
+        updatedAt = Instant.now();
+    }
 
-    // Getters & setters
+    // ===== Getters & Setters =====
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
