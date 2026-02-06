@@ -4,22 +4,38 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "theme")
+@Table(name = "chatbot_theme")
 public class Theme {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String headerColor = "#b46a8c";
+
+    @Column(nullable = false)
     private String backgroundColor = "#ffffff";
+
+    @Column(nullable = false)
     private String textColor = "#000000";
+
+    @Column(nullable = false)
     private String iconColor = "#b46a8c";
 
-    private String avatarFilename; // stores the filename of uploaded avatar
+    @Column(nullable = true)
+    private String avatarFilename;
 
-    @Column(name = "updated_at")
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
+
+    @Column(nullable = false)
     private Instant updatedAt = Instant.now();
+
+    @PreUpdate
+    public void onUpdate() {
+        updatedAt = Instant.now();
+    }
 
     // Getters and setters
     public Long getId() { return id; }
@@ -40,6 +56,6 @@ public class Theme {
     public String getAvatarFilename() { return avatarFilename; }
     public void setAvatarFilename(String avatarFilename) { this.avatarFilename = avatarFilename; }
 
+    public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
