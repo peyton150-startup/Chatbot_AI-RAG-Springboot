@@ -22,7 +22,7 @@ public class ChatbotThemeEntity {
     @Column(nullable = false)
     private String iconColor = "#0d6efd";
 
-    // Stored as file name (not blob)
+    @Column
     private String avatarFilename;
 
     public Long getId() { return id; }
@@ -40,5 +40,7 @@ public class ChatbotThemeEntity {
     public void setIconColor(String iconColor) { this.iconColor = iconColor; }
 
     public String getAvatarFilename() { return avatarFilename; }
-    public void setAvatarFilename(String avatarFilename) { this.avatarFilename = avatarFilename; }
+    public void setAvatarFilename(String avatarFilename) {
+        this.avatarFilename = avatarFilename;
+    }
 }
