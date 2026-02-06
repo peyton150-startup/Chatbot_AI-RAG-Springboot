@@ -20,18 +20,18 @@ public class UserEntity implements UserDetails {
     private Long id;
 
     @NotBlank(message = "Username is required")
-    @Size(max = 50, message = "Username cannot exceed 50 characters")
+    @Size(max = 50)
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
     @NotBlank(message = "Email is required")
-    @Email(message = "Must be a valid email")
-    @Size(max = 100, message = "Email cannot exceed 100 characters")
+    @Email
+    @Size(max = 100)
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(max = 100, message = "Password cannot exceed 100 characters")
+    @NotBlank
+    @Size(max = 100)
     @Column(nullable = false)
     @JsonIgnore
     private String password;
@@ -40,11 +40,9 @@ public class UserEntity implements UserDetails {
     private Instant createdAt;
 
     @Column(nullable = false)
-    private String role = "ROLE_USER"; // default role
+    private String role = "ROLE_USER";
 
-    public UserEntity() {
-        // default constructor
-    }
+    public UserEntity() {}
 
     @PrePersist
     public void prePersist() {
@@ -54,7 +52,7 @@ public class UserEntity implements UserDetails {
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(() -> role);
+        return Collections.singleton(() -> role); // keep ROLE_ prefix
     }
 
     @Override
@@ -75,7 +73,7 @@ public class UserEntity implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 
-    // Standard getters and setters
+    // Standard getters/setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -86,7 +84,6 @@ public class UserEntity implements UserDetails {
     public void setPassword(String password) { this.password = password; }
 
     public String getRole() { return role; }
-
     public void setRole(String role) {
         if (!role.startsWith("ROLE_")) {
             this.role = "ROLE_" + role.toUpperCase();
@@ -98,9 +95,13 @@ public class UserEntity implements UserDetails {
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
-    // Helper to display role cleanly in admin panel
     @Transient
     public String getRoleDisplay() {
         return role.replace("ROLE_", "");
+    }
+
+    @Override
+    public String toString() {
+        return "UserEntity{id=" + id + ", username='" + username + "', role='" + role + "'}";
     }
 }
