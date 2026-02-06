@@ -25,6 +25,11 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
+    // Optional helper to return Optional
+    public Optional<UserEntity> getUserByUsernameOptional(String username) {
+        return userRepository.findByUsername(username);
+    }
+
     public List<UserEntity> getAllUsers() {
         return userRepository.findAll();
     }
@@ -42,7 +47,6 @@ public class UserService implements UserDetailsService {
         user.setUsername(user.getUsername().substring(0, Math.min(50, user.getUsername().length())));
         user.setEmail(user.getEmail().substring(0, Math.min(100, user.getEmail().length())));
 
-        // Only hash password if not empty and not already hashed
         if (user.getPassword() != null && !user.getPassword().isEmpty() && !user.getPassword().startsWith("$2")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
