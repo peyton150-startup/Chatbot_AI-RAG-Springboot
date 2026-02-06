@@ -28,48 +28,36 @@ public class ChatbotThemeService {
 
     /**
      * Retrieves the theme for the currently logged-in user.
-     * If no theme exists, creates a default one and saves it.
-     *
-     * @return ChatbotThemeEntity for the current user
+     * If no theme exists, creates a default one.
      */
     public ChatbotThemeEntity getThemeForCurrentUser() {
-        // Get currently authenticated username
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        UserEntity user = userService.getUserByUsername(username)
+        UserEntity user = userService.getUserByUsernameOptional(username)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
-        // Look for existing theme
         return repository.findByUserId(user.getId())
                 .orElseGet(() -> {
-                    // Create default theme if none exists
                     ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
                     newTheme.setUser(user);
-                    newTheme.setHeaderColor("#ffffff");    // default header color
-                    newTheme.setBackgroundColor("#f5f5f5"); // default background
-                    newTheme.setTextColor("#000000");       // default text
-                    newTheme.setIconColor("#000000");       // default icon
+                    newTheme.setHeaderColor("#ffffff");
+                    newTheme.setBackgroundColor("#f5f5f5");
+                    newTheme.setTextColor("#000000");
+                    newTheme.setIconColor("#000000");
                     return repository.save(newTheme);
                 });
     }
 
     /**
-     * Updates the theme for the currently logged-in user, optionally updating the avatar.
-     *
-     * @param updatedTheme The new theme values to save
-     * @param avatarFile   Optional avatar file to upload
-     * @return Updated ChatbotThemeEntity
-     * @throws IOException if avatar upload fails
+     * Updates the theme for the currently logged-in user, optionally updating avatar.
      */
     public ChatbotThemeEntity updateTheme(ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
         ChatbotThemeEntity currentTheme = getThemeForCurrentUser();
 
-        // Update theme colors
         currentTheme.setHeaderColor(updatedTheme.getHeaderColor());
         currentTheme.setBackgroundColor(updatedTheme.getBackgroundColor());
         currentTheme.setTextColor(updatedTheme.getTextColor());
         currentTheme.setIconColor(updatedTheme.getIconColor());
 
-        // Handle avatar file upload if present
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
             File file = new File(uploadDir + filename);
@@ -77,7 +65,42 @@ public class ChatbotThemeService {
             currentTheme.setAvatarFilename(filename);
         }
 
-        // Save updated theme
         return repository.save(currentTheme);
+    }
+
+    /**
+     * Admin method: get theme by user ID.
+     */
+    public Optional<ChatbotThemeEntity> getThemeForUser(Long userId) {
+        return repository.findByUserId(userId);
+    }
+
+    /**
+     * Admin method: update theme for a specific user.
+     */
+    public ChatbotThemeEntity updateThemeForUser(Long userId, ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
+        UserEntity user = userService.getUserById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        ChatbotThemeEntity theme = repository.findByUserId(userId)
+                .orElseGet(() -> {
+                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
+                    newTheme.setUser(user);
+                    return repository.save(newTheme);
+                });
+
+        theme.setHeaderColor(updatedTheme.getHeaderColor());
+        theme.setBackgroundColor(updatedTheme.getBackgroundColor());
+        theme.setTextColor(updatedTheme.getTextColor());
+        theme.setIconColor(updatedTheme.getIconColor());
+
+        if (avatarFile != null && !avatarFile.isEmpty()) {
+            String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
+            File file = new File(uploadDir + filename);
+            avatarFile.transferTo(file);
+            theme.setAvatarFilename(filename);
+        }
+
+        return repository.save(theme);
     }
 }
