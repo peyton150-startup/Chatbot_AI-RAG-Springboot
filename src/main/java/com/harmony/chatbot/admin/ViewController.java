@@ -8,7 +8,7 @@ public class ViewController {
 
     @GetMapping("/login")
     public String login() {
-        return "login"; // renders login.html
+        System.out.println("Rendering login page");
+        return "login"; // login.html
     }
-
 }
