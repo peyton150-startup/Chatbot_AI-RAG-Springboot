@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Optional;
 
 @Service
@@ -25,7 +26,7 @@ public class ChatbotThemeService {
         System.out.println("ChatbotThemeService initialized with uploadDir: " + uploadDir);
     }
 
-    public ChatbotThemeEntity getThemeForCurrentUser() {
+    public Theme getThemeForCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         System.out.println("Getting theme for current user: " + username);
         UserEntity user = userService.getUserByUsernameOptional(username)
@@ -33,26 +34,20 @@ public class ChatbotThemeService {
 
         return repository.findByUserId(user.getId())
                 .orElseGet(() -> {
-                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
-                    newTheme.setUser(user);
-                    newTheme.setHeaderColor("#ffffff");
-                    newTheme.setBackgroundColor("#f5f5f5");
-                    newTheme.setTextColor("#000000");
-                    newTheme.setIconColor("#000000");
+                    Theme newTheme = createDefaultTheme(user);
                     System.out.println("Creating default theme for user: " + username);
                     return repository.save(newTheme);
                 });
     }
 
-    public ChatbotThemeEntity updateThemeForUser(Long userId, ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) throws IOException {
+    public Theme updateThemeForUser(Long userId, Theme updatedTheme, MultipartFile avatarFile) throws IOException {
         UserEntity user = userService.getUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         System.out.println("Updating theme for user ID: " + userId + ", username: " + user.getUsername());
 
-        ChatbotThemeEntity theme = repository.findByUserId(userId)
+        Theme theme = repository.findByUserId(userId)
                 .orElseGet(() -> {
-                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
-                    newTheme.setUser(user);
+                    Theme newTheme = createDefaultTheme(user);
                     System.out.println("Creating new theme for user: " + user.getUsername());
                     return repository.save(newTheme);
                 });
@@ -73,8 +68,18 @@ public class ChatbotThemeService {
         return repository.save(theme);
     }
 
-    public Optional<ChatbotThemeEntity> getThemeForUser(Long userId) {
+    public Optional<Theme> getThemeForUser(Long userId) {
         System.out.println("Fetching theme for userId: " + userId);
         return repository.findByUserId(userId);
+    }
+
+    private Theme createDefaultTheme(UserEntity user) {
+        Theme theme = new Theme();
+        theme.setUser(user);
+        theme.setHeaderColor("#ffffff");
+        theme.setBackgroundColor("#f5f5f5");
+        theme.setTextColor("#000000");
+        theme.setIconColor("#000000");
+        return theme;
     }
 }
