@@ -23,9 +23,7 @@ public class ChatbotThemeService {
         this.userService = userService;
 
         File dir = new File(uploadDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+        if (!dir.exists()) dir.mkdirs();
     }
 
     public ChatbotThemeEntity getThemeForCurrentUser() {
@@ -50,11 +48,8 @@ public class ChatbotThemeService {
                 });
     }
 
-    public ChatbotThemeEntity updateThemeForUser(
-            Long userId,
-            ChatbotThemeEntity updatedTheme,
-            MultipartFile avatarFile
-    ) throws IOException {
+    public ChatbotThemeEntity updateThemeForUser(Long userId, ChatbotThemeEntity updatedTheme,
+                                                 MultipartFile avatarFile) throws IOException {
         ChatbotThemeEntity theme = repository.findByUserId(userId)
                 .orElseGet(() -> getOrCreateThemeForUser(userId));
 
@@ -62,6 +57,9 @@ public class ChatbotThemeService {
         theme.setBackgroundColor(updatedTheme.getBackgroundColor());
         theme.setTextColor(updatedTheme.getTextColor());
         theme.setIconColor(updatedTheme.getIconColor());
+        theme.setChipBackgroundColor(updatedTheme.getChipBackgroundColor());
+        theme.setChipHoverColor(updatedTheme.getChipHoverColor());
+        theme.setChipBorderColor(updatedTheme.getChipBorderColor());
 
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
