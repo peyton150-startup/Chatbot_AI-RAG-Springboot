@@ -50,8 +50,8 @@ public class UserService implements UserDetailsService {
 
         UserEntity saved = userRepository.save(user);
 
-        // Publish event AFTER saving user
-        eventPublisher.publishEvent(UserCreatedEvent.of(this, saved.getId()));
+        // Publish event AFTER saving user to create default theme
+        eventPublisher.publishEvent(new UserCreatedEvent(saved.getId()));
 
         return saved;
     }
