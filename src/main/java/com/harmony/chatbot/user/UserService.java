@@ -1,5 +1,6 @@
 package com.harmony.chatbot.user;
 
+import com.harmony.chatbot.theme.ChatbotThemeService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,51 +14,45 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ChatbotThemeService themeService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            ChatbotThemeService themeService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.themeService = themeService;
     }
 
     @Override
     public UserEntity loadUserByUsername(String username) throws UsernameNotFoundException {
-        System.out.println("Attempting to load user by username: " + username);
-
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    System.out.println("User not found: " + username);
-                    return new UsernameNotFoundException("User not found");
-                });
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        // 🔴 TEMPORARY ROLE NORMALIZATION FIX
-        // Converts ROLE_ADMIN -> ADMIN, ROLE_USER -> USER
+        // TEMP ROLE NORMALIZATION (your existing fix)
         if (user.getRole() != null && user.getRole().startsWith("ROLE_")) {
-            String normalizedRole = user.getRole().replace("ROLE_", "");
-            System.out.println("Normalizing role from " + user.getRole() + " to " + normalizedRole);
-            user.setRole(normalizedRole);
+            user.setRole(user.getRole().replace("ROLE_", ""));
         }
 
-        System.out.println("User loaded: " + user.getUsername() + ", authority: " + user.getRole());
         return user;
     }
 
     public Optional<UserEntity> getUserByUsernameOptional(String username) {
-        System.out.println("Checking optional user: " + username);
         return userRepository.findByUsername(username);
     }
 
     public List<UserEntity> getAllUsers() {
-        System.out.println("Retrieving all users");
         return userRepository.findAll();
     }
 
     public Optional<UserEntity> getUserById(Long id) {
-        System.out.println("Getting user by ID: " + id);
         return userRepository.findById(id);
     }
 
     public UserEntity saveUser(UserEntity user) {
-        System.out.println("Saving user: " + user.getUsername());
+        boolean isNewUser = (user.getId() == null);
 
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             throw new IllegalArgumentException("Username cannot be empty");
@@ -73,15 +68,20 @@ public class UserService implements UserDetailsService {
             !user.getPassword().isEmpty() &&
             !user.getPassword().startsWith("$2")) {
 
-            System.out.println("Encoding password for user: " + user.getUsername());
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
-        return userRepository.save(user);
+        UserEntity savedUser = userRepository.save(user);
+
+        // ✅ AUTO-CREATE THEME ON FIRST SAVE
+        if (isNewUser) {
+            themeService.createDefaultThemeIfMissing(savedUser);
+        }
+
+        return savedUser;
     }
 
     public void deleteUser(Long id) {
-        System.out.println("Deleting user ID: " + id);
         userRepository.deleteById(id);
     }
 
