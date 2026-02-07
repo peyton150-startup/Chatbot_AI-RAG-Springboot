@@ -15,17 +15,23 @@ public class ChatbotThemeService {
 
     private final ChatbotThemeRepository repository;
     private final UserService userService;
+
     private final String uploadDir = "uploads/avatar/";
 
-    public ChatbotThemeService(ChatbotThemeRepository repository, UserService userService) {
+    public ChatbotThemeService(ChatbotThemeRepository repository,
+                               UserService userService) {
         this.repository = repository;
         this.userService = userService;
 
         File dir = new File(uploadDir);
-        if (!dir.exists()) dir.mkdirs();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
     }
 
-    /** ✅ ALWAYS returns a theme (creates one if missing) */
+    /**
+     * Used for logged-in user (theme ALWAYS exists because of event listener)
+     */
     public ChatbotThemeEntity getThemeForCurrentUser() {
         String username = SecurityContextHolder
                 .getContext()
@@ -35,13 +41,12 @@ public class ChatbotThemeService {
         UserEntity user = userService.getUserByUsernameOptional(username)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
-        return createDefaultThemeIfMissing(user);
+        return repository.findByUserId(user.getId())
+                .orElseThrow(() -> new IllegalStateException("Theme missing for user"));
     }
 
-    /** ✅ Used by UserService on user creation */
-    public ChatbotThemeEntity createDefaultThemeIfMissing(UserEntity user) {
-        return repository.findByUserId(user.getId())
-                .orElseGet(() -> repository.save(createDefaultTheme(user)));
+    public Optional<ChatbotThemeEntity> getThemeForUser(Long userId) {
+        return repository.findByUserId(userId);
     }
 
     public ChatbotThemeEntity updateThemeForUser(
@@ -50,10 +55,8 @@ public class ChatbotThemeService {
             MultipartFile avatarFile
     ) throws IOException {
 
-        UserEntity user = userService.getUserById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        ChatbotThemeEntity theme = createDefaultThemeIfMissing(user);
+        ChatbotThemeEntity theme = repository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("Theme not found"));
 
         theme.setHeaderColor(updatedTheme.getHeaderColor());
         theme.setBackgroundColor(updatedTheme.getBackgroundColor());
@@ -68,20 +71,5 @@ public class ChatbotThemeService {
         }
 
         return repository.save(theme);
-    }
-
-    public Optional<ChatbotThemeEntity> getThemeForUser(Long userId) {
-        return repository.findByUserId(userId);
-    }
-
-    /** 🔒 Single source of truth for defaults */
-    private ChatbotThemeEntity createDefaultTheme(UserEntity user) {
-        ChatbotThemeEntity theme = new ChatbotThemeEntity();
-        theme.setUser(user);
-        theme.setHeaderColor("#0d6efd");
-        theme.setBackgroundColor("#ffffff");
-        theme.setTextColor("#000000");
-        theme.setIconColor("#0d6efd");
-        return theme;
     }
 }
