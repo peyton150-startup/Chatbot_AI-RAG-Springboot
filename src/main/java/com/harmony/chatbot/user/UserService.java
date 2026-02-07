@@ -1,5 +1,6 @@
 package com.harmony.chatbot.user;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,11 +14,14 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -46,9 +50,8 @@ public class UserService implements UserDetailsService {
 
         UserEntity saved = userRepository.save(user);
 
-        // Publish event instead of calling themeService directly
-        saved.setCreatedAt(java.time.Instant.now());
-        UserCreatedEvent.publish(saved);
+        // Publish event AFTER user is saved
+        eventPublisher.publishEvent(UserCreatedEvent.of(this, saved.getId()));
 
         return saved;
     }
