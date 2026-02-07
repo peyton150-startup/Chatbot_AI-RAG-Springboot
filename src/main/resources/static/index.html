@@ -1,234 +1,104 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8" />
-    <title>Harmony Aesthetics Chat</title>
+<script>
+const API_CHAT = "/api/chat";
+const API_THEME = "/api/theme";
 
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
+const bubble = document.getElementById("chatBubble");
+const windowBox = document.getElementById("chatWindow");
+const closeBtn = document.getElementById("closeChat");
+const messages = document.getElementById("chatMessages");
+const input = document.getElementById("input");
+const send = document.getElementById("send");
+
+/**
+ * Apply CSS variables from a theme object
+ */
+function applyTheme(theme) {
+    if (!theme) return;
+
+    const root = document.documentElement;
+    root.style.setProperty('--chat-header', theme.headerColor);
+    root.style.setProperty('--chat-bg', theme.backgroundColor);
+    root.style.setProperty('--chat-text', theme.textColor);
+    root.style.setProperty('--chat-icon', theme.iconColor);
+
+    root.style.setProperty('--chat-chip-bg', theme.chipBackgroundColor || '#f0f0f0');
+    root.style.setProperty('--chat-chip-hover', theme.chipHoverColor || '#e0e0e0');
+    root.style.setProperty('--chat-chip-border', theme.chipBorderColor || '#ccc');
+
+    // Update avatar if exists
+    const avatars = document.querySelectorAll(".chatbot-avatar");
+    avatars.forEach(img => {
+        if (theme.avatarFilename) {
+            img.src = theme.avatarFilename;
+            img.style.display = 'inline-block';
+        } else {
+            img.style.display = 'none';
         }
-
-        #chatBubble {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 60px;
-            height: 60px;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 99999;
-        }
-
-        #chatWindow {
-            position: fixed;
-            bottom: 100px;
-            right: 24px;
-            width: 360px;
-            height: 520px;
-            border-radius: 16px;
-            display: none;
-            flex-direction: column;
-            z-index: 99999;
-        }
-
-        #chatHeader {
-            padding: 12px;
-            color: white;
-            border-radius: 16px 16px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #chatHeader img.chatbot-avatar,
-        #chatBubble img.chatbot-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-
-        #suggestions {
-            display: flex;
-            gap: 8px;
-            padding: 10px;
-            flex-wrap: wrap;
-            border-bottom: 1px solid #eee;
-        }
-
-        #chatWindow .chip {
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        #chatMessages {
-            flex: 1;
-            padding: 12px;
-            overflow-y: auto;
-            font-size: 13px;
-        }
-
-        .msg {
-            margin-bottom: 10px;
-            max-width: 80%;
-            padding: 8px 12px;
-            border-radius: 14px;
-            line-height: 1.4;
-        }
-
-        .user {
-            margin-left: auto;
-            border-bottom-right-radius: 4px;
-        }
-
-        .bot {
-            margin-right: auto;
-            border-bottom-left-radius: 4px;
-        }
-
-        #chatInput {
-            display: flex;
-            padding: 10px;
-            gap: 8px;
-            border-top: 1px solid #eee;
-        }
-
-        #chatInput textarea {
-            flex: 1;
-            resize: none;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-
-        #chatInput button {
-            color: white;
-            border: none;
-            border-radius: 20px;
-            padding: 8px 14px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-
-<div id="chatBubble">
-    <img th:if="${theme.avatarFilename}" th:src="@{'/uploads/avatar/' + ${theme.avatarFilename}}" class="chatbot-avatar" />
-    <span th:if="${theme.avatarFilename == null}">💬</span>
-</div>
-
-<div id="chatWindow">
-    <div id="chatHeader">
-        <div style="display:flex; align-items:center;">
-            <img th:if="${theme.avatarFilename}" th:src="@{'/uploads/avatar/' + ${theme.avatarFilename}}" class="chatbot-avatar" />
-            <span>Harmony Assistant</span>
-        </div>
-        <span id="closeChat" style="cursor:pointer;">✕</span>
-    </div>
-
-    <div id="suggestions">
-        <div class="chip">How do I book an appointment?</div>
-        <div class="chip">Where is your office located?</div>
-        <div class="chip">What is Botox?</div>
-    </div>
-
-    <div id="chatMessages">
-        <div class="bot msg">Hi! How can I help you today?</div>
-    </div>
-
-    <div id="chatInput">
-        <textarea id="input" rows="2" placeholder="Ask a question…"></textarea>
-        <button id="send">Send</button>
-    </div>
-</div>
-
-<script th:inline="javascript">
-    /* ==== THEME VARIABLES ==== */
-    const theme = {
-        header: /*[[${theme.headerColor != null ? '${theme.headerColor}' : '#0d6efd'}]]*/,
-        background: /*[[${theme.backgroundColor != null ? '${theme.backgroundColor}' : '#ffffff'}]]*/,
-        text: /*[[${theme.textColor != null ? '${theme.textColor}' : '#000000'}]]*/,
-        icon: /*[[${theme.iconColor != null ? '${theme.iconColor}' : '#0d6efd'}]]*/,
-        chipBg: /*[[${theme.chipBackgroundColor != null ? '${theme.chipBackgroundColor}' : '#f0f0f0'}]]*/,
-        chipHover: /*[[${theme.chipHoverColor != null ? '${theme.chipHoverColor}' : '#e0e0e0'}]]*/,
-        chipBorder: /*[[${theme.chipBorderColor != null ? '${theme.chipBorderColor}' : '#ccc'}]]*/
-    };
-
-    const bubble = document.getElementById("chatBubble");
-    const windowBox = document.getElementById("chatWindow");
-    const closeBtn = document.getElementById("closeChat");
-    const messages = document.getElementById("chatMessages");
-    const input = document.getElementById("input");
-    const send = document.getElementById("send");
-
-    /* APPLY THEME */
-    bubble.style.backgroundColor = theme.icon;
-    windowBox.style.backgroundColor = theme.background;
-    document.getElementById("chatHeader").style.backgroundColor = theme.header;
-    document.getElementById("chatMessages").style.color = theme.text;
-
-    document.querySelectorAll(".chip").forEach(chip => {
-        chip.style.backgroundColor = theme.chipBg;
-        chip.style.border = `1px solid ${theme.chipBorder}`;
-        chip.addEventListener("mouseover", () => chip.style.backgroundColor = theme.chipHover);
-        chip.addEventListener("mouseout", () => chip.style.backgroundColor = theme.chipBg);
     });
+}
 
-    /* CHAT WINDOW TOGGLE */
-    bubble.onclick = () => { windowBox.style.display = "flex"; bubble.style.display = "none"; };
-    closeBtn.onclick = () => { windowBox.style.display = "none"; bubble.style.display = "flex"; };
-
-    function addMsg(text, cls) {
-        const div = document.createElement("div");
-        div.className = `msg ${cls}`;
-        div.textContent = text;
-        if(cls === "user") div.style.backgroundColor = theme.icon;
-        if(cls === "bot") div.style.backgroundColor = theme.background === "#ffffff" ? "#eee" : theme.background;
-        messages.appendChild(div);
-        messages.scrollTop = messages.scrollHeight;
-        return div;
+/**
+ * Fetch and apply user theme
+ */
+async function loadTheme() {
+    try {
+        const res = await fetch(API_THEME);
+        if (!res.ok) throw new Error("Failed to load theme");
+        const theme = await res.json();
+        applyTheme(theme);
+    } catch (err) {
+        console.error("Error loading theme:", err);
     }
+}
 
-    async function sendMsg(textOverride) {
-        const text = textOverride || input.value.trim();
-        if (!text) return;
+// Initial theme load
+loadTheme();
 
-        addMsg(text, "user");
-        input.value = "";
+// Chat bubble open/close
+bubble.onclick = () => { windowBox.style.display = "flex"; bubble.style.display = "none"; };
+closeBtn.onclick = () => { windowBox.style.display = "none"; bubble.style.display = "flex"; };
 
-        const loading = addMsg("Thinking…", "bot");
+// Add message to chat
+function addMsg(text, cls) {
+    const div = document.createElement("div");
+    div.className = `msg ${cls}`;
+    div.textContent = text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div;
+}
 
-        try {
-            const res = await fetch("/api/rag-chat", {
-                method: "POST",
-                headers: { "Content-Type": "text/plain" },
-                body: text
-            });
+// Send chat message
+async function sendMsg(textOverride) {
+    const text = textOverride || input.value.trim();
+    if (!text) return;
 
-            const reply = await res.text();
-            loading.textContent = reply || "No response.";
-        } catch (err) {
-            console.error("Fetch error:", err);
-            loading.textContent = "Server error.";
-        }
+    addMsg(text, "user");
+    input.value = "";
+
+    const loading = addMsg("Thinking…", "bot");
+
+    try {
+        const res = await fetch(API_CHAT, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: text
+        });
+        const reply = await res.text();
+        loading.textContent = reply || "No response.";
+    } catch (err) {
+        console.error("Chat fetch error:", err);
+        loading.textContent = "Server error.";
     }
+}
 
-    send.onclick = () => sendMsg();
-    input.addEventListener("keydown", e => { if(e.key==="Enter"){e.preventDefault();sendMsg();} });
-    document.querySelectorAll(".chip").forEach(chip => { chip.onclick = () => { sendMsg(chip.textContent); document.getElementById("suggestions").style.display = "none"; }; });
+// Event listeners
+send.onclick = () => sendMsg();
+input.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); sendMsg(); } });
+document.querySelectorAll(".chip").forEach(chip => {
+    chip.onclick = () => {
+        sendMsg(chip.textContent);
+        document.getElementById("suggestions").style.display = "none";
+    };
+});
 </script>
-
-</body>
-</html>
