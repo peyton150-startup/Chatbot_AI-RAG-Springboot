@@ -65,7 +65,7 @@ public class ChatbotThemeService {
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = avatarFile.getOriginalFilename();
             theme.setAvatarFilename(filename);
-            // Save file externally
+            // Save file externally if needed
         }
 
         return themeRepository.save(theme);
