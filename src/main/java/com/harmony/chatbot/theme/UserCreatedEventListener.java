@@ -10,12 +10,9 @@ import org.springframework.stereotype.Component;
 public class UserCreatedEventListener {
 
     private final ChatbotThemeRepository themeRepository;
-    private final UserService userService;
 
-    public UserCreatedEventListener(ChatbotThemeRepository themeRepository,
-                                    UserService userService) {
+    public UserCreatedEventListener(ChatbotThemeRepository themeRepository) {
         this.themeRepository = themeRepository;
-        this.userService = userService;
     }
 
     @EventListener
@@ -24,8 +21,15 @@ public class UserCreatedEventListener {
 
         if (themeRepository.findByUserId(userId).isPresent()) return;
 
-        UserEntity user = userService.getUserById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
+        // Get user from event's source if possible
+        Object source = event.getSource();
+        UserEntity user;
+        if (source instanceof UserService) {
+            user = ((UserService) source).getUserById(userId)
+                    .orElseThrow(() -> new IllegalStateException("User not found"));
+        } else {
+            throw new IllegalStateException("Cannot retrieve UserService from event source");
+        }
 
         ChatbotThemeEntity theme = new ChatbotThemeEntity();
         theme.setUser(user);
@@ -35,6 +39,7 @@ public class UserCreatedEventListener {
         theme.setIconColor("#0d6efd");
 
         themeRepository.save(theme);
+
         System.out.println("✅ Default theme created for userId=" + userId);
     }
 }
