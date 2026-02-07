@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,7 +45,6 @@ public class AdminController {
                 .getUserByUsernameOptional(currentUser.getUsername())
                 .orElseThrow(() -> new IllegalStateException("Admin not found"));
 
-        // Use UserEntity instead of ID
         ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(adminUser);
         model.addAttribute("theme", theme);
 
@@ -70,6 +70,14 @@ public class AdminController {
             userService.saveUser(user);
         }
 
+        return "redirect:/admin";
+    }
+
+    // Delete user
+    @PostMapping("/users/{id}/delete")
+    public String deleteUser(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        userService.getUserById(id).ifPresent(user -> userService.deleteUser(user));
+        redirectAttributes.addFlashAttribute("success", "User deleted successfully");
         return "redirect:/admin";
     }
 
