@@ -1,6 +1,5 @@
 package com.harmony.chatbot.user;
 
-import com.harmony.chatbot.theme.ChatbotThemeService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,14 +13,11 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ChatbotThemeService themeService;
 
     public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       ChatbotThemeService themeService) {
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.themeService = themeService;
     }
 
     @Override
@@ -50,8 +46,9 @@ public class UserService implements UserDetailsService {
 
         UserEntity saved = userRepository.save(user);
 
-        // Ensure theme exists for new user
-        themeService.getOrCreateThemeForUser(saved.getId());
+        // Publish event instead of calling themeService directly
+        saved.setCreatedAt(java.time.Instant.now());
+        UserCreatedEvent.publish(saved);
 
         return saved;
     }
