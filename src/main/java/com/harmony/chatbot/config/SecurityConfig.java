@@ -21,13 +21,11 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        System.out.println("Initializing BCryptPasswordEncoder");
         return new BCryptPasswordEncoder();
     }
 
     @Bean
     public DaoAuthenticationProvider authProvider() {
-        System.out.println("Setting up DaoAuthenticationProvider with UserService");
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userService);
         provider.setPasswordEncoder(passwordEncoder());
@@ -37,7 +35,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/admin/**").hasAuthority("ADMIN")
                 .anyRequest().permitAll()
@@ -52,11 +49,11 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
             )
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**")
+            )
             .exceptionHandling(ex -> ex
                 .accessDeniedHandler((request, response, exception) -> {
-                    System.out.println("ACCESS DENIED");
-                    System.out.println("User: " + request.getUserPrincipal());
-                    exception.printStackTrace();
                     response.sendError(403, "Access Denied");
                 })
             );
