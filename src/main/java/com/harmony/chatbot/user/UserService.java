@@ -1,10 +1,10 @@
 package com.harmony.chatbot.user;
 
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import com.harmony.chatbot.theme.ChatbotThemeService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,61 +14,46 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ApplicationEventPublisher eventPublisher;
+    private final ChatbotThemeService themeService;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       ApplicationEventPublisher eventPublisher) {
+                       ChatbotThemeService themeService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.eventPublisher = eventPublisher;
+        this.themeService = themeService;
     }
 
     @Override
     public UserEntity loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
     public Optional<UserEntity> getUserByUsernameOptional(String username) {
         return userRepository.findByUsername(username);
     }
 
-    public List<UserEntity> getAllUsers() {
-        return userRepository.findAll();
-    }
-
     public Optional<UserEntity> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
+    public List<UserEntity> getAllUsers() {
+        return userRepository.findAll();
+    }
+
     public UserEntity saveUser(UserEntity user) {
-        boolean isNew = (user.getId() == null);
-
-        if (user.getUsername() == null || user.getUsername().isBlank()) {
-            throw new IllegalArgumentException("Username cannot be empty");
-        }
-
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email cannot be empty");
-        }
-
         if (user.getPassword() != null &&
-            !user.getPassword().isBlank() &&
-            !user.getPassword().startsWith("$2")) {
-
+            !user.getPassword().startsWith("$2")) { // encode if not encoded
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
-        UserEntity savedUser = userRepository.save(user);
+        UserEntity saved = userRepository.save(user);
 
-        // 🔥 Publish event ONLY when user is newly created
-        if (isNew) {
-            eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getId()));
-        }
+        // Ensure theme exists for new user
+        themeService.getOrCreateThemeForUser(saved.getId());
 
-        return savedUser;
+        return saved;
     }
 
     public void deleteUser(Long id) {
