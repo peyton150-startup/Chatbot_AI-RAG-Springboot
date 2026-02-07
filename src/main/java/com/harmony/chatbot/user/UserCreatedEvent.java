@@ -18,9 +18,7 @@ public class UserCreatedEvent {
         return source;
     }
 
-    // Convenience factory method
     public static UserCreatedEvent of(Object source, Long userId) {
         return new UserCreatedEvent(source, userId);
     }
 }
-
