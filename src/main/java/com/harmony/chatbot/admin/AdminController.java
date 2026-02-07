@@ -53,7 +53,6 @@ public class AdminController {
 
     @PostMapping("/users")
     public String saveUser(@ModelAttribute UserEntity user) {
-
         if (user.getId() != null) {
             userService.getUserById(user.getId()).ifPresent(existing -> {
                 existing.setUsername(user.getUsername());
@@ -69,7 +68,6 @@ public class AdminController {
         } else {
             userService.saveUser(user);
         }
-
         return "redirect:/admin";
     }
 
@@ -94,7 +92,6 @@ public class AdminController {
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
         themeService.updateThemeForUser(user, themeForm, avatarFile);
-
         return "redirect:/admin";
     }
 }
