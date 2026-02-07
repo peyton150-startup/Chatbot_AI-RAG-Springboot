@@ -11,7 +11,7 @@ public class ChatbotThemeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private UserEntity user;
 
     @Column(nullable = false)
@@ -29,6 +29,16 @@ public class ChatbotThemeEntity {
     @Column
     private String avatarFilename;
 
+    @Column
+    private String chipBackgroundColor = "#e0e0e0";
+
+    @Column
+    private String chipHoverColor = "#c0c0c0";
+
+    @Column
+    private String chipBorderColor = "#b0b0b0";
+
+    // ===== Getters / Setters =====
     public Long getId() { return id; }
 
     public UserEntity getUser() { return user; }
@@ -48,4 +58,13 @@ public class ChatbotThemeEntity {
 
     public String getAvatarFilename() { return avatarFilename; }
     public void setAvatarFilename(String avatarFilename) { this.avatarFilename = avatarFilename; }
+
+    public String getChipBackgroundColor() { return chipBackgroundColor; }
+    public void setChipBackgroundColor(String chipBackgroundColor) { this.chipBackgroundColor = chipBackgroundColor; }
+
+    public String getChipHoverColor() { return chipHoverColor; }
+    public void setChipHoverColor(String chipHoverColor) { this.chipHoverColor = chipHoverColor; }
+
+    public String getChipBorderColor() { return chipBorderColor; }
+    public void setChipBorderColor(String chipBorderColor) { this.chipBorderColor = chipBorderColor; }
 }
