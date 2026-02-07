@@ -46,8 +46,8 @@ public class ChatController {
         UserEntity user = userService.getUserByUsernameOptional(username)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
-        // Fetch the theme for that user
-        ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
+        // Fetch the theme for that user (pass UserEntity, not user ID)
+        ChatbotThemeEntity theme = themeService.getThemeForUser(user)
                 .orElseThrow(() -> new IllegalStateException("Theme not found"));
 
         Map<String, String> themeMap = new HashMap<>();
