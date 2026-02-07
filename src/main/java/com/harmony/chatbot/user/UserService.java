@@ -4,8 +4,7 @@ import com.harmony.chatbot.theme.ChatbotThemeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.io.File;
 
 @Service
 public class UserService {
@@ -18,15 +17,15 @@ public class UserService {
         this.themeService = themeService;
     }
 
-    public List<UserEntity> getAllUsers() {
+    public Iterable<UserEntity> getAllUsers() {
         return userRepository.findAll();
     }
 
-    public Optional<UserEntity> getUserById(Long id) {
+    public java.util.Optional<UserEntity> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
-    public Optional<UserEntity> getUserByUsernameOptional(String username) {
+    public java.util.Optional<UserEntity> getUserByUsernameOptional(String username) {
         return userRepository.findByUsername(username);
     }
 
@@ -34,13 +33,14 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // --- FULL DELETE including theme ---
     @Transactional
-    public void deleteUser(UserEntity user) {
-        // Delete associated theme first
+    public void deleteUserCompletely(UserEntity user) {
+        if (user == null) return;
+
+        // 1. Delete theme and avatar files
         themeService.deleteThemeForUser(user);
 
-        // Delete user itself
+        // 2. Delete the user
         userRepository.delete(user);
     }
 }
