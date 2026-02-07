@@ -35,19 +35,17 @@ public class AdminController {
             throw new IllegalStateException("No authenticated user");
         }
 
-        // Fetch all users
         List<UserEntity> users = userService.getAllUsers();
         model.addAttribute("users", users);
         model.addAttribute("user", new UserEntity());
         model.addAttribute("editMode", false);
 
-        // Get currently logged-in admin
         UserEntity adminUser = userService
                 .getUserByUsernameOptional(currentUser.getUsername())
                 .orElseThrow(() -> new IllegalStateException("Admin not found"));
 
-        // Ensure admin has a theme
-        ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(adminUser.getId());
+        // Use UserEntity instead of ID
+        ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(adminUser);
         model.addAttribute("theme", theme);
 
         return "admin";
@@ -78,7 +76,8 @@ public class AdminController {
     @PostMapping("/theme")
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
-                            @RequestParam(value = "avatar", required = false) MultipartFile avatarFile) throws IOException {
+                            @RequestParam(value = "avatar", required = false)
+                            MultipartFile avatarFile) throws IOException {
 
         if (currentUser == null) {
             throw new IllegalStateException("No authenticated user");
@@ -88,7 +87,7 @@ public class AdminController {
                 .getUserByUsernameOptional(currentUser.getUsername())
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
-        themeService.updateThemeForUser(user.getId(), themeForm, avatarFile);
+        themeService.updateThemeForUser(user, themeForm, avatarFile);
 
         return "redirect:/admin";
     }
