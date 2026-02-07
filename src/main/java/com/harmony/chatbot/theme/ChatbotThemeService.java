@@ -14,19 +14,16 @@ import java.util.Optional;
 public class ChatbotThemeService {
 
     private final ChatbotThemeRepository repository;
-    private final UserService userService;
     private final String uploadDir = "uploads/avatar/";
 
-    public ChatbotThemeService(ChatbotThemeRepository repository,
-                               UserService userService) {
+    public ChatbotThemeService(ChatbotThemeRepository repository) {
         this.repository = repository;
-        this.userService = userService;
 
         File dir = new File(uploadDir);
         if (!dir.exists()) dir.mkdirs();
     }
 
-    public ChatbotThemeEntity getThemeForCurrentUser() {
+    public ChatbotThemeEntity getThemeForCurrentUser(UserService userService) {
         String username = SecurityContextHolder
                 .getContext()
                 .getAuthentication()
@@ -39,19 +36,15 @@ public class ChatbotThemeService {
                 .orElseGet(() -> createDefaultTheme(user));
     }
 
-    public ChatbotThemeEntity getOrCreateThemeForUser(Long userId) {
-        return repository.findByUserId(userId)
-                .orElseGet(() -> {
-                    UserEntity user = userService.getUserById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("User not found"));
-                    return createDefaultTheme(user);
-                });
+    public ChatbotThemeEntity getOrCreateThemeForUser(UserEntity user) {
+        return repository.findByUserId(user.getId())
+                .orElseGet(() -> createDefaultTheme(user));
     }
 
     public ChatbotThemeEntity updateThemeForUser(Long userId, ChatbotThemeEntity updatedTheme,
                                                  MultipartFile avatarFile) throws IOException {
         ChatbotThemeEntity theme = repository.findByUserId(userId)
-                .orElseGet(() -> getOrCreateThemeForUser(userId));
+                .orElseThrow(() -> new IllegalStateException("Theme not found"));
 
         theme.setHeaderColor(updatedTheme.getHeaderColor());
         theme.setBackgroundColor(updatedTheme.getBackgroundColor());
