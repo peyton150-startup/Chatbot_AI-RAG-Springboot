@@ -1,13 +1,12 @@
 package com.harmony.chatbot.user;
 
-import org.springframework.context.ApplicationEvent;
-
-public class UserCreatedEvent extends ApplicationEvent {
+public class UserCreatedEvent {
 
     private final Long userId;
+    private final Object source;
 
     public UserCreatedEvent(Object source, Long userId) {
-        super(source);
+        this.source = source;
         this.userId = userId;
     }
 
@@ -15,6 +14,11 @@ public class UserCreatedEvent extends ApplicationEvent {
         return userId;
     }
 
+    public Object getSource() {
+        return source;
+    }
+
+    // Convenience factory method
     public static UserCreatedEvent of(Object source, Long userId) {
         return new UserCreatedEvent(source, userId);
     }
