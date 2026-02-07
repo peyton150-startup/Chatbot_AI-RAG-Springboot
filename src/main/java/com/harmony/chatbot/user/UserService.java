@@ -44,13 +44,13 @@ public class UserService implements UserDetailsService {
 
     public UserEntity saveUser(UserEntity user) {
         if (user.getPassword() != null &&
-            !user.getPassword().startsWith("$2")) { // encode if not encoded
+            !user.getPassword().startsWith("$2")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
         UserEntity saved = userRepository.save(user);
 
-        // Publish event AFTER user is saved
+        // Publish event AFTER saving user
         eventPublisher.publishEvent(UserCreatedEvent.of(this, saved.getId()));
 
         return saved;
