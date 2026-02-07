@@ -97,4 +97,10 @@ public class ChatbotThemeService {
 
         return theme;
     }
+
+    // --- NEW METHOD: delete a theme for a given user ---
+    public void deleteThemeForUser(UserEntity user) {
+        themeRepository.findByUserId(user.getId())
+                .ifPresent(themeRepository::delete);
+    }
 }
