@@ -2,8 +2,8 @@ package com.harmony.chatbot;
 
 import com.harmony.chatbot.theme.ChatbotThemeEntity;
 import com.harmony.chatbot.theme.ChatbotThemeService;
-import com.harmony.chatbot.user.UserService;
 import com.harmony.chatbot.user.UserEntity;
+import com.harmony.chatbot.user.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -30,13 +30,11 @@ public class IndexController {
             currentUser = userService.getUserByUsernameOptional(auth.getName()).orElse(null);
         }
 
-        // Always provide a theme, use default if no user
         ChatbotThemeEntity theme = (currentUser != null)
                 ? themeService.getOrCreateThemeForUser(currentUser)
                 : themeService.getDefaultTheme();
 
         model.addAttribute("theme", theme);
-
         return "index";
     }
 }
