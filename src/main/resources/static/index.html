@@ -1,104 +1,279 @@
-<script>
-const API_CHAT = "/api/chat";
-const API_THEME = "/api/theme";
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Harmony Aesthetics Chat</title>
 
-const bubble = document.getElementById("chatBubble");
-const windowBox = document.getElementById("chatWindow");
-const closeBtn = document.getElementById("closeChat");
-const messages = document.getElementById("chatMessages");
-const input = document.getElementById("input");
-const send = document.getElementById("send");
+    <!-- CSS Variables (default/fallback) -->
+    <style>
+        :root {
+            --chat-header: #0d6efd;
+            --chat-bg: #ffffff;
+            --chat-text: #000000;
+            --chat-icon: #0d6efd;
 
-/**
- * Apply CSS variables from a theme object
- */
-function applyTheme(theme) {
-    if (!theme) return;
-
-    const root = document.documentElement;
-    root.style.setProperty('--chat-header', theme.headerColor);
-    root.style.setProperty('--chat-bg', theme.backgroundColor);
-    root.style.setProperty('--chat-text', theme.textColor);
-    root.style.setProperty('--chat-icon', theme.iconColor);
-
-    root.style.setProperty('--chat-chip-bg', theme.chipBackgroundColor || '#f0f0f0');
-    root.style.setProperty('--chat-chip-hover', theme.chipHoverColor || '#e0e0e0');
-    root.style.setProperty('--chat-chip-border', theme.chipBorderColor || '#ccc');
-
-    // Update avatar if exists
-    const avatars = document.querySelectorAll(".chatbot-avatar");
-    avatars.forEach(img => {
-        if (theme.avatarFilename) {
-            img.src = theme.avatarFilename;
-            img.style.display = 'inline-block';
-        } else {
-            img.style.display = 'none';
+            --chat-chip-bg: #f0f0f0;
+            --chat-chip-hover: #e0e0e0;
+            --chat-chip-border: #ccc;
         }
-    });
-}
 
-/**
- * Fetch and apply user theme
- */
-async function loadTheme() {
-    try {
-        const res = await fetch(API_THEME);
-        if (!res.ok) throw new Error("Failed to load theme");
-        const theme = await res.json();
-        applyTheme(theme);
-    } catch (err) {
-        console.error("Error loading theme:", err);
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        #chatBubble {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            background: var(--chat-icon);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 99999;
+        }
+
+        #chatWindow {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            width: 360px;
+            height: 520px;
+            background: var(--chat-bg);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            display: none;
+            flex-direction: column;
+            z-index: 99999;
+        }
+
+        #chatHeader {
+            padding: 12px;
+            background: var(--chat-header);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chatHeader img.chatbot-avatar,
+        #chatBubble img.chatbot-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        #suggestions {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #eee;
+        }
+
+        #chatWindow .chip {
+            padding: 6px 12px;
+            border-radius: 16px;
+            border: 1px solid var(--chat-chip-border);
+            background: var(--chat-chip-bg);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #chatWindow .chip:hover {
+            background: var(--chat-chip-hover);
+        }
+
+        #chatMessages {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            background: var(--chat-bg);
+            color: var(--chat-text);
+            font-size: 13px;
+        }
+
+        .msg {
+            margin-bottom: 10px;
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 14px;
+            line-height: 1.4;
+        }
+
+        .user {
+            background: var(--chat-icon);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot {
+            background: #eee;
+            color: #333;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+
+        #chatInput {
+            display: flex;
+            padding: 10px;
+            gap: 8px;
+            border-top: 1px solid #eee;
+        }
+
+        #chatInput textarea {
+            flex: 1;
+            resize: none;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        #chatInput button {
+            background: var(--chat-icon);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chatBubble">
+    <img class="chatbot-avatar" />
+    <span>💬</span>
+</div>
+
+<div id="chatWindow">
+    <div id="chatHeader">
+        <div style="display:flex; align-items:center;">
+            <img class="chatbot-avatar" />
+            <span>Harmony Assistant</span>
+        </div>
+        <span id="closeChat" style="cursor:pointer;">✕</span>
+    </div>
+
+    <div id="suggestions">
+        <div class="chip">How do I book an appointment?</div>
+        <div class="chip">Where is your office located?</div>
+        <div class="chip">What is Botox?</div>
+    </div>
+
+    <div id="chatMessages">
+        <div class="bot msg">Hi! How can I help you today?</div>
+    </div>
+
+    <div id="chatInput">
+        <textarea id="input" rows="2" placeholder="Ask a question…"></textarea>
+        <button id="send">Send</button>
+    </div>
+</div>
+
+<script>
+    const API_CHAT = "/api/chat";
+    const API_THEME = "/api/theme";
+    const bubble = document.getElementById("chatBubble");
+    const windowBox = document.getElementById("chatWindow");
+    const closeBtn = document.getElementById("closeChat");
+    const messages = document.getElementById("chatMessages");
+    const input = document.getElementById("input");
+    const send = document.getElementById("send");
+
+    // Show/hide chat
+    bubble.onclick = () => { windowBox.style.display = "flex"; bubble.style.display = "none"; };
+    closeBtn.onclick = () => { windowBox.style.display = "none"; bubble.style.display = "flex"; };
+
+    function addMsg(text, cls) {
+        const div = document.createElement("div");
+        div.className = `msg ${cls}`;
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
     }
-}
 
-// Initial theme load
-loadTheme();
+    async function sendMsg(textOverride) {
+        const text = textOverride || input.value.trim();
+        if (!text) return;
 
-// Chat bubble open/close
-bubble.onclick = () => { windowBox.style.display = "flex"; bubble.style.display = "none"; };
-closeBtn.onclick = () => { windowBox.style.display = "none"; bubble.style.display = "flex"; };
+        addMsg(text, "user");
+        input.value = "";
+        const loading = addMsg("Thinking…", "bot");
 
-// Add message to chat
-function addMsg(text, cls) {
-    const div = document.createElement("div");
-    div.className = `msg ${cls}`;
-    div.textContent = text;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-    return div;
-}
-
-// Send chat message
-async function sendMsg(textOverride) {
-    const text = textOverride || input.value.trim();
-    if (!text) return;
-
-    addMsg(text, "user");
-    input.value = "";
-
-    const loading = addMsg("Thinking…", "bot");
-
-    try {
-        const res = await fetch(API_CHAT, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: text
-        });
-        const reply = await res.text();
-        loading.textContent = reply || "No response.";
-    } catch (err) {
-        console.error("Chat fetch error:", err);
-        loading.textContent = "Server error.";
+        try {
+            const res = await fetch(API_CHAT, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: text
+            });
+            const reply = await res.text();
+            loading.textContent = reply || "No response.";
+        } catch (err) {
+            console.error("Fetch error:", err);
+            loading.textContent = "Server error.";
+        }
     }
-}
 
-// Event listeners
-send.onclick = () => sendMsg();
-input.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); sendMsg(); } });
-document.querySelectorAll(".chip").forEach(chip => {
-    chip.onclick = () => {
-        sendMsg(chip.textContent);
-        document.getElementById("suggestions").style.display = "none";
-    };
-});
+    send.onclick = () => sendMsg();
+    input.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); sendMsg(); } });
+    document.querySelectorAll(".chip").forEach(chip => { chip.onclick = () => { sendMsg(chip.textContent); document.getElementById("suggestions").style.display = "none"; }; });
+
+    // ===== THEME HANDLING =====
+    async function loadTheme() {
+        try {
+            const res = await fetch(API_THEME);
+            if (!res.ok) throw new Error("Failed to load theme");
+            const theme = await res.json();
+
+            // Apply root CSS variables
+            const root = document.documentElement;
+            root.style.setProperty('--chat-header', theme.headerColor);
+            root.style.setProperty('--chat-bg', theme.backgroundColor);
+            root.style.setProperty('--chat-text', theme.textColor);
+            root.style.setProperty('--chat-icon', theme.iconColor);
+
+            root.style.setProperty('--chat-chip-bg', theme.chipBackgroundColor || '#f0f0f0');
+            root.style.setProperty('--chat-chip-hover', theme.chipHoverColor || '#e0e0e0');
+            root.style.setProperty('--chat-chip-border', theme.chipBorderColor || '#ccc');
+
+            // Apply chip styles safely
+            document.querySelectorAll("#suggestions .chip").forEach(chip => {
+                chip.style.background = theme.chipBackgroundColor || '#f0f0f0';
+                chip.style.border = `1px solid ${theme.chipBorderColor || '#ccc'}`;
+                chip.onmouseover = () => { chip.style.background = theme.chipHoverColor || '#e0e0e0'; };
+                chip.onmouseout = () => { chip.style.background = theme.chipBackgroundColor || '#f0f0f0'; };
+            });
+
+            // Avatar handling
+            document.querySelectorAll(".chatbot-avatar").forEach(img => {
+                if (theme.avatarFilename) {
+                    img.src = '/uploads/avatar/' + theme.avatarFilename;
+                    img.style.display = 'inline-block';
+                } else {
+                    img.style.display = 'none';
+                }
+            });
+
+        } catch (err) {
+            console.error("Error loading theme:", err);
+        }
+    }
+
+    loadTheme();
 </script>
+</body>
+</html>
