@@ -23,3 +23,4 @@ public class UserCreatedEvent {
         return new UserCreatedEvent(source, userId);
     }
 }
+
