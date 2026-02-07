@@ -1,6 +1,7 @@
 package com.harmony.chatbot.theme;
 
 import com.harmony.chatbot.user.UserEntity;
+import com.harmony.chatbot.user.UserService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,9 +13,12 @@ import java.util.Optional;
 public class ChatbotThemeService {
 
     private final ChatbotThemeRepository themeRepository;
+    private final UserService userService;
 
-    public ChatbotThemeService(ChatbotThemeRepository themeRepository) {
+    public ChatbotThemeService(ChatbotThemeRepository themeRepository,
+                               UserService userService) {
         this.themeRepository = themeRepository;
+        this.userService = userService;
     }
 
     public Optional<ChatbotThemeEntity> getThemeEntityByUser(UserEntity user) {
@@ -87,8 +91,8 @@ public class ChatbotThemeService {
     public ChatbotThemeEntity getThemeForCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof org.springframework.security.core.userdetails.User userDetails) {
-            // Cannot fetch UserEntity here without UserService, so return default theme
-            return getDefaultTheme();
+            UserEntity user = userService.getUserByUsernameOptional(userDetails.getUsername()).orElse(null);
+            if (user != null) return getOrCreateThemeForUser(user);
         }
         return getDefaultTheme();
     }
