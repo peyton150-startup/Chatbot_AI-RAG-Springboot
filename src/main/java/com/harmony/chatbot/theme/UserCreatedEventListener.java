@@ -22,10 +22,7 @@ public class UserCreatedEventListener {
     public void handleUserCreated(UserCreatedEvent event) {
         Long userId = event.getUserId();
 
-        // If theme already exists, do nothing
-        if (themeRepository.findByUserId(userId).isPresent()) {
-            return;
-        }
+        if (themeRepository.findByUserId(userId).isPresent()) return;
 
         UserEntity user = userService.getUserById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found for theme creation"));
@@ -38,7 +35,6 @@ public class UserCreatedEventListener {
         theme.setIconColor("#0d6efd");
 
         themeRepository.save(theme);
-
         System.out.println("✅ Default theme created for userId=" + userId);
     }
 }
