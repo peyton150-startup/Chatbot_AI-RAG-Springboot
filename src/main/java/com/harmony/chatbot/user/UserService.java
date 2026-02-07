@@ -44,14 +44,14 @@ public class UserService implements UserDetailsService {
 
     public UserEntity saveUser(UserEntity user) {
         if (user.getPassword() != null &&
-            !user.getPassword().startsWith("$2")) { // encode if not already encoded
+            !user.getPassword().startsWith("$2")) { // encode if not encoded
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
         UserEntity saved = userRepository.save(user);
 
-        // Publish event AFTER saving user to create default theme
-        eventPublisher.publishEvent(new UserCreatedEvent(saved.getId()));
+        // Publish event AFTER saving user
+        eventPublisher.publishEvent(UserCreatedEvent.of(this, saved.getId()));
 
         return saved;
     }
