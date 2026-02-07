@@ -41,9 +41,12 @@ public class ChatController {
     @GetMapping("/theme")
     public Map<String, String> getTheme() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // Fetch the UserEntity from the UserService
         UserEntity user = userService.getUserByUsernameOptional(username)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
+        // Fetch the theme for that user
         ChatbotThemeEntity theme = themeService.getThemeForUser(user.getId())
                 .orElseThrow(() -> new IllegalStateException("Theme not found"));
 
@@ -53,7 +56,8 @@ public class ChatController {
         themeMap.put("textColor", theme.getTextColor());
         themeMap.put("iconColor", theme.getIconColor());
         themeMap.put("avatarFilename", theme.getAvatarFilename() != null ? "/uploads/avatar/" + theme.getAvatarFilename() : null);
-        // optional chip colors
+
+        // Optional chip colors
         themeMap.put("chipBackgroundColor", theme.getChipBackgroundColor() != null ? theme.getChipBackgroundColor() : "#f0f0f0");
         themeMap.put("chipHoverColor", theme.getChipHoverColor() != null ? theme.getChipHoverColor() : "#e0e0e0");
         themeMap.put("chipBorderColor", theme.getChipBorderColor() != null ? theme.getChipBorderColor() : "#ccc");
