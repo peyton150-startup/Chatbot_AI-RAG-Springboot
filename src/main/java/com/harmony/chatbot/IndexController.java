@@ -30,6 +30,7 @@ public class IndexController {
         UserEntity currentUser = userService.getUserByUsernameOptional(username)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
+        // Use UserEntity directly for theme
         ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(currentUser);
         model.addAttribute("theme", theme);
 
