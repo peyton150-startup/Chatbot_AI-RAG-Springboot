@@ -2,6 +2,8 @@ package com.harmony.chatbot.theme;
 
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,12 +15,15 @@ import java.util.Optional;
 public class ChatbotThemeService {
 
     private final ChatbotThemeRepository themeRepository;
-    private final UserService userService;
 
-    public ChatbotThemeService(ChatbotThemeRepository themeRepository,
-                               UserService userService) {
+    // Lazy injection to break circular dependency
+    @Autowired
+    @Lazy
+    private UserService userService;
+
+    @Autowired
+    public ChatbotThemeService(ChatbotThemeRepository themeRepository) {
         this.themeRepository = themeRepository;
-        this.userService = userService;
     }
 
     public Optional<ChatbotThemeEntity> getThemeEntityByUser(UserEntity user) {
