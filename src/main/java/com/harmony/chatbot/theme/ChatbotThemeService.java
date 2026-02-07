@@ -23,11 +23,51 @@ public class ChatbotThemeService {
         return themeRepository.findByUserId(user.getId());
     }
 
-    // Delete theme and avatar file
+    public ChatbotThemeEntity getOrCreateThemeForUser(UserEntity user) {
+        return themeRepository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    ChatbotThemeEntity theme = new ChatbotThemeEntity();
+                    theme.setUser(user);
+                    theme.setHeaderColor("#0d6efd");
+                    theme.setBackgroundColor("#ffffff");
+                    theme.setTextColor("#000000");
+                    theme.setIconColor("#0d6efd");
+                    theme.setChipBackgroundColor("#f0f0f0");
+                    theme.setChipHoverColor("#e0e0e0");
+                    theme.setChipBorderColor("#ccc");
+                    return themeRepository.save(theme);
+                });
+    }
+
+    public ChatbotThemeEntity updateThemeForUser(UserEntity user, ChatbotThemeEntity updatedTheme, MultipartFile avatarFile) {
+        ChatbotThemeEntity theme = themeRepository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    ChatbotThemeEntity newTheme = new ChatbotThemeEntity();
+                    newTheme.setUser(user);
+                    return newTheme;
+                });
+
+        theme.setHeaderColor(updatedTheme.getHeaderColor());
+        theme.setBackgroundColor(updatedTheme.getBackgroundColor());
+        theme.setTextColor(updatedTheme.getTextColor());
+        theme.setIconColor(updatedTheme.getIconColor());
+        theme.setChipBackgroundColor(updatedTheme.getChipBackgroundColor());
+        theme.setChipHoverColor(updatedTheme.getChipHoverColor());
+        theme.setChipBorderColor(updatedTheme.getChipBorderColor());
+
+        if (avatarFile != null && !avatarFile.isEmpty()) {
+            String filename = avatarFile.getOriginalFilename();
+            theme.setAvatarFilename(filename);
+            // Save file logic remains external; ensure file is saved to /uploads/avatar/
+        }
+
+        return themeRepository.save(theme);
+    }
+
     public void deleteThemeForUser(UserEntity user) {
         getThemeEntityByUser(user).ifPresent(theme -> {
 
-            // Delete avatar file if it exists
+            // Delete avatar file
             if (theme.getAvatarFilename() != null && !theme.getAvatarFilename().isEmpty()) {
                 File avatarFile = new File("uploads/avatar/" + theme.getAvatarFilename());
                 if (avatarFile.exists()) {
@@ -35,10 +75,8 @@ public class ChatbotThemeService {
                 }
             }
 
-            // Delete theme entity from DB
+            // Delete theme entity
             themeRepository.delete(theme);
         });
     }
-
-    // Existing methods (getOrCreateThemeForUser, updateThemeForUser, etc.) remain unchanged
 }
