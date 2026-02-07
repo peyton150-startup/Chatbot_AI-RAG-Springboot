@@ -14,7 +14,6 @@ public class ChatbotThemeController {
 
     @GetMapping("/api/theme")
     public ChatbotThemeEntity getCurrentUserTheme() {
-        // No arguments needed; service uses SecurityContextHolder internally
         return themeService.getThemeForCurrentUser();
     }
 }
