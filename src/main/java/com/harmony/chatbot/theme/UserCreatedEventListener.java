@@ -25,7 +25,7 @@ public class UserCreatedEventListener {
         if (themeRepository.findByUserId(userId).isPresent()) return;
 
         UserEntity user = userService.getUserById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found for theme creation"));
+                .orElseThrow(() -> new IllegalStateException("User not found"));
 
         ChatbotThemeEntity theme = new ChatbotThemeEntity();
         theme.setUser(user);
