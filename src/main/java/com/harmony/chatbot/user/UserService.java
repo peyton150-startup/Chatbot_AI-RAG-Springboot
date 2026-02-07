@@ -34,11 +34,13 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    // --- FULL DELETE including theme ---
     @Transactional
     public void deleteUser(UserEntity user) {
-        // Delete related theme
+        // Delete associated theme first
         themeService.deleteThemeForUser(user);
-        // Delete user
+
+        // Delete user itself
         userRepository.delete(user);
     }
 }
