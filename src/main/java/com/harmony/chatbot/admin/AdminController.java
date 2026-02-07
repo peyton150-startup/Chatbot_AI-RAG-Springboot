@@ -35,19 +35,19 @@ public class AdminController {
             throw new IllegalStateException("No authenticated user");
         }
 
+        // Fetch all users
         List<UserEntity> users = userService.getAllUsers();
         model.addAttribute("users", users);
         model.addAttribute("user", new UserEntity());
         model.addAttribute("editMode", false);
 
+        // Get currently logged-in admin
         UserEntity adminUser = userService
                 .getUserByUsernameOptional(currentUser.getUsername())
                 .orElseThrow(() -> new IllegalStateException("Admin not found"));
 
-        ChatbotThemeEntity theme = themeService
-                .getThemeForUser(adminUser.getId())
-                .orElseThrow(() -> new IllegalStateException("Theme missing for admin"));
-
+        // Ensure admin has a theme
+        ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(adminUser.getId());
         model.addAttribute("theme", theme);
 
         return "admin";
@@ -78,8 +78,7 @@ public class AdminController {
     @PostMapping("/theme")
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
-                            @RequestParam(value = "avatar", required = false)
-                            MultipartFile avatarFile) throws IOException {
+                            @RequestParam(value = "avatar", required = false) MultipartFile avatarFile) throws IOException {
 
         if (currentUser == null) {
             throw new IllegalStateException("No authenticated user");
