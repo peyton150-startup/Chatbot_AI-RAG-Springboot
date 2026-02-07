@@ -9,6 +9,8 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 
+import java.util.stream.StreamSupport;
+
 @SpringBootApplication
 public class ChatbotApplication {
 
@@ -21,10 +23,7 @@ public class ChatbotApplication {
     public WebServerFactoryCustomizer<TomcatServletWebServerFactory> containerCustomizer() {
         return factory -> {
             String port = System.getenv("PORT");
-            if (port != null) {
-                factory.setPort(Integer.parseInt(port));
-                System.out.println("Setting server port from environment: " + port);
-            }
+            if (port != null) factory.setPort(Integer.parseInt(port));
         };
     }
 
@@ -32,16 +31,16 @@ public class ChatbotApplication {
     CommandLineRunner initAdmin(UserService userService) {
         return args -> {
             String adminUsername = "admin";
-            if (userService.getAllUsers().stream().noneMatch(u -> u.getUsername().equals(adminUsername))) {
+            boolean exists = StreamSupport.stream(userService.getAllUsers().spliterator(), false)
+                    .anyMatch(u -> u.getUsername().equals(adminUsername));
+
+            if (!exists) {
                 UserEntity admin = new UserEntity();
                 admin.setUsername(adminUsername);
                 admin.setEmail("admin@example.com");
-                admin.setPassword("admin123"); // hashed in UserService
-                admin.setRole("ADMIN");
+                admin.setPassword("admin123");
+                admin.setRole("ROLE_ADMIN");
                 userService.saveUser(admin);
-                System.out.println("Admin user created: username=admin, password=admin123");
-            } else {
-                System.out.println("Admin user already exists");
             }
         };
     }
