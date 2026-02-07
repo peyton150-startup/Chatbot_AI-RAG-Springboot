@@ -43,15 +43,14 @@ public class UserService implements UserDetailsService {
     }
 
     public UserEntity saveUser(UserEntity user) {
-        if (user.getPassword() != null &&
-            !user.getPassword().startsWith("$2")) {
+        if (user.getPassword() != null && !user.getPassword().startsWith("$2")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
         UserEntity saved = userRepository.save(user);
 
-        // Publish event AFTER saving user
-        eventPublisher.publishEvent(UserCreatedEvent.of(this, saved.getId()));
+        // Publish event AFTER saving user to create theme
+        eventPublisher.publishEvent(new UserCreatedEvent(saved.getId()));
 
         return saved;
     }
