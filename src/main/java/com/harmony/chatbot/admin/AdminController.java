@@ -76,8 +76,7 @@ public class AdminController {
     @PostMapping("/theme")
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
-                            @RequestParam(value = "avatar", required = false)
-                            MultipartFile avatarFile) throws IOException {
+                            @RequestParam(value = "avatar", required = false) MultipartFile avatarFile) throws IOException {
 
         if (currentUser == null) {
             throw new IllegalStateException("No authenticated user");
