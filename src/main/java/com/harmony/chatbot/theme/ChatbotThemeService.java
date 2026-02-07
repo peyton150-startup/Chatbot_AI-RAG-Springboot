@@ -28,9 +28,6 @@ public class ChatbotThemeService {
         }
     }
 
-    /**
-     * Get or create a theme for the currently authenticated user
-     */
     public ChatbotThemeEntity getThemeForCurrentUser() {
         String username = SecurityContextHolder
                 .getContext()
@@ -44,9 +41,6 @@ public class ChatbotThemeService {
                 .orElseGet(() -> createDefaultTheme(user));
     }
 
-    /**
-     * Get a theme by userId or create default
-     */
     public ChatbotThemeEntity getOrCreateThemeForUser(Long userId) {
         return repository.findByUserId(userId)
                 .orElseGet(() -> {
@@ -56,9 +50,6 @@ public class ChatbotThemeService {
                 });
     }
 
-    /**
-     * Update theme values
-     */
     public ChatbotThemeEntity updateThemeForUser(
             Long userId,
             ChatbotThemeEntity updatedTheme,
@@ -71,9 +62,6 @@ public class ChatbotThemeService {
         theme.setBackgroundColor(updatedTheme.getBackgroundColor());
         theme.setTextColor(updatedTheme.getTextColor());
         theme.setIconColor(updatedTheme.getIconColor());
-        theme.setChipBackgroundColor(updatedTheme.getChipBackgroundColor());
-        theme.setChipHoverColor(updatedTheme.getChipHoverColor());
-        theme.setChipBorderColor(updatedTheme.getChipBorderColor());
 
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
@@ -88,6 +76,10 @@ public class ChatbotThemeService {
     private ChatbotThemeEntity createDefaultTheme(UserEntity user) {
         ChatbotThemeEntity theme = new ChatbotThemeEntity();
         theme.setUser(user);
+        theme.setHeaderColor("#0d6efd");
+        theme.setBackgroundColor("#ffffff");
+        theme.setTextColor("#000000");
+        theme.setIconColor("#0d6efd");
         return repository.save(theme);
     }
 
