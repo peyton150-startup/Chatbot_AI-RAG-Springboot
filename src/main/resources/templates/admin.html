@@ -81,7 +81,7 @@
         </div>
 
         <button class="btn" th:classappend="${editMode} ? 'btn-primary' : 'btn-success'" 
-                th:text="${editMode} ? 'Save Changes' : 'Add User'"></button>
+                th:text="${editMode} ? 'Save Changes' : 'Add User'" type="submit"></button>
         <a th:if="${editMode}" th:href="@{/admin}" class="btn btn-secondary ms-2">Cancel</a>
     </form>
 
