@@ -21,15 +21,15 @@ public class IndexController {
 
     @GetMapping("/")
     public String index(Model model) {
-        // Fetch currently authenticated user entity
-        UserEntity currentUser = userService.getUserByUsernameOptional(
-                org.springframework.security.core.context.SecurityContextHolder
-                        .getContext()
-                        .getAuthentication()
-                        .getName()
-        ).orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+        // Get currently authenticated user
+        String username = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
 
-        // Get theme for this user
+        UserEntity currentUser = userService.getUserByUsernameOptional(username)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+
         ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(currentUser);
         model.addAttribute("theme", theme);
 
