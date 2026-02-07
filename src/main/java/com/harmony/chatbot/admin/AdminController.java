@@ -30,7 +30,9 @@ public class AdminController {
 
     @GetMapping
     public String adminDashboard(@AuthenticationPrincipal UserDetails currentUser,
-                                 Model model) {
+                                 Model model,
+                                 @ModelAttribute("success") String successMessage,
+                                 @ModelAttribute("error") String errorMessage) {
 
         if (currentUser == null) {
             throw new IllegalStateException("No authenticated user");
@@ -48,53 +50,75 @@ public class AdminController {
         ChatbotThemeEntity theme = themeService.getOrCreateThemeForUser(adminUser);
         model.addAttribute("theme", theme);
 
+        // Pass flash messages to template
+        model.addAttribute("successMessage", successMessage);
+        model.addAttribute("errorMessage", errorMessage);
+
         return "admin";
     }
 
     @PostMapping("/users")
-    public String saveUser(@ModelAttribute UserEntity user) {
+    public String saveUser(@ModelAttribute UserEntity user, RedirectAttributes redirectAttributes) {
 
-        if (user.getId() != null) {
-            userService.getUserById(user.getId()).ifPresent(existing -> {
-                existing.setUsername(user.getUsername());
-                existing.setEmail(user.getEmail());
-                existing.setRole(user.getRole());
+        try {
+            if (user.getId() != null) {
+                userService.getUserById(user.getId()).ifPresent(existing -> {
+                    existing.setUsername(user.getUsername());
+                    existing.setEmail(user.getEmail());
+                    existing.setRole(user.getRole());
 
-                if (user.getPassword() != null && !user.getPassword().isBlank()) {
-                    existing.setPassword(user.getPassword());
-                }
+                    if (user.getPassword() != null && !user.getPassword().isBlank()) {
+                        existing.setPassword(user.getPassword());
+                    }
 
-                userService.saveUser(existing);
-            });
-        } else {
-            userService.saveUser(user);
+                    userService.saveUser(existing);
+                });
+                redirectAttributes.addFlashAttribute("success", "User updated successfully");
+            } else {
+                userService.saveUser(user);
+                redirectAttributes.addFlashAttribute("success", "User added successfully");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error saving user: " + e.getMessage());
         }
 
         return "redirect:/admin";
     }
 
-    // Delete user
+    // Delete user completely (including theme)
     @PostMapping("/users/{id}/delete")
     public String deleteUser(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        userService.getUserById(id).ifPresent(user -> userService.deleteUser(user));
-        redirectAttributes.addFlashAttribute("success", "User deleted successfully");
+        userService.getUserById(id).ifPresentOrElse(
+                user -> {
+                    userService.deleteUser(user);
+                    redirectAttributes.addFlashAttribute("success", "User deleted successfully");
+                },
+                () -> redirectAttributes.addFlashAttribute("error", "User not found")
+        );
         return "redirect:/admin";
     }
 
     @PostMapping("/theme")
     public String saveTheme(@AuthenticationPrincipal UserDetails currentUser,
                             @ModelAttribute ChatbotThemeEntity themeForm,
-                            @RequestParam(value = "avatar", required = false) MultipartFile avatarFile) throws IOException {
+                            @RequestParam(value = "avatar", required = false) MultipartFile avatarFile,
+                            RedirectAttributes redirectAttributes) {
 
         if (currentUser == null) {
             throw new IllegalStateException("No authenticated user");
         }
 
-        UserEntity user = userService
-                .getUserByUsernameOptional(currentUser.getUsername())
-                .orElseThrow(() -> new IllegalStateException("User not found"));
+        try {
+            UserEntity user = userService
+                    .getUserByUsernameOptional(currentUser.getUsername())
+                    .orElseThrow(() -> new IllegalStateException("User not found"));
 
-        themeService.updateThemeForUser(user, themeForm, avatarFile);
+            themeService.updateThemeForUser(user, themeForm, avatarFile);
+            redirectAttributes.addFlashAttribute("success", "Theme updated successfully");
+
+        } catch (IOException e) {
+            redirectAttributes.addFlashAttribute("error", "Error updating theme: " + e.getMessage());
+        }
 
         return "redirect:/admin";
     }
