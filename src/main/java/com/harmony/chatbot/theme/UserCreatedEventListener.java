@@ -1,5 +1,6 @@
 package com.harmony.chatbot.theme;
 
+import com.harmony.chatbot.user.UserCreatedEvent;
 import com.harmony.chatbot.user.UserEntity;
 import com.harmony.chatbot.user.UserRepository;
 import org.springframework.context.event.EventListener;
@@ -32,6 +33,9 @@ public class UserCreatedEventListener {
         theme.setBackgroundColor("#ffffff");
         theme.setTextColor("#000000");
         theme.setIconColor("#0d6efd");
+        theme.setChipBackgroundColor("#f0f0f0");
+        theme.setChipHoverColor("#e0e0e0");
+        theme.setChipBorderColor("#ccc");
 
         themeRepository.save(theme);
         System.out.println("✅ Default theme created for userId=" + userId);
