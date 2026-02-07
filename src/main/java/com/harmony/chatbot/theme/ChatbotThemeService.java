@@ -1,7 +1,8 @@
 package com.harmony.chatbot.theme;
 
 import com.harmony.chatbot.user.UserEntity;
-import com.harmony.chatbot.user.UserRepository;
+import com.harmony.chatbot.user.UserService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,11 +13,11 @@ import java.util.Optional;
 public class ChatbotThemeService {
 
     private final ChatbotThemeRepository themeRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public ChatbotThemeService(ChatbotThemeRepository themeRepository, UserRepository userRepository) {
+    public ChatbotThemeService(ChatbotThemeRepository themeRepository, UserService userService) {
         this.themeRepository = themeRepository;
-        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     public Optional<ChatbotThemeEntity> getThemeEntityByUser(UserEntity user) {
@@ -58,7 +59,7 @@ public class ChatbotThemeService {
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = avatarFile.getOriginalFilename();
             theme.setAvatarFilename(filename);
-            // Save file logic remains external; ensure file is saved to /uploads/avatar/
+            // Save file externally
         }
 
         return themeRepository.save(theme);
@@ -66,17 +67,34 @@ public class ChatbotThemeService {
 
     public void deleteThemeForUser(UserEntity user) {
         getThemeEntityByUser(user).ifPresent(theme -> {
-
-            // Delete avatar file
             if (theme.getAvatarFilename() != null && !theme.getAvatarFilename().isEmpty()) {
                 File avatarFile = new File("uploads/avatar/" + theme.getAvatarFilename());
-                if (avatarFile.exists()) {
-                    avatarFile.delete();
-                }
+                if (avatarFile.exists()) avatarFile.delete();
             }
-
-            // Delete theme entity
             themeRepository.delete(theme);
         });
+    }
+
+    // NEW: default theme for non-authenticated users
+    public ChatbotThemeEntity getDefaultTheme() {
+        ChatbotThemeEntity theme = new ChatbotThemeEntity();
+        theme.setHeaderColor("#0d6efd");
+        theme.setBackgroundColor("#ffffff");
+        theme.setTextColor("#000000");
+        theme.setIconColor("#0d6efd");
+        theme.setChipBackgroundColor("#f0f0f0");
+        theme.setChipHoverColor("#e0e0e0");
+        theme.setChipBorderColor("#ccc");
+        return theme;
+    }
+
+    // NEW: get current user's theme using SecurityContextHolder
+    public ChatbotThemeEntity getThemeForCurrentUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof org.springframework.security.core.userdetails.User userDetails) {
+            UserEntity user = userService.getUserByUsernameOptional(userDetails.getUsername()).orElse(null);
+            if (user != null) return getOrCreateThemeForUser(user);
+        }
+        return getDefaultTheme();
     }
 }
