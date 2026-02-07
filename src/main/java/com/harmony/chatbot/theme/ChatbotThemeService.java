@@ -15,7 +15,6 @@ public class ChatbotThemeService {
 
     private final ChatbotThemeRepository repository;
     private final UserService userService;
-
     private final String uploadDir = "uploads/avatar/";
 
     public ChatbotThemeService(ChatbotThemeRepository repository,
@@ -30,7 +29,7 @@ public class ChatbotThemeService {
     }
 
     /**
-     * Used for logged-in user (theme ALWAYS exists because of event listener)
+     * Get or create a theme for the currently authenticated user
      */
     public ChatbotThemeEntity getThemeForCurrentUser() {
         String username = SecurityContextHolder
@@ -42,26 +41,39 @@ public class ChatbotThemeService {
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
 
         return repository.findByUserId(user.getId())
-                .orElseThrow(() -> new IllegalStateException("Theme missing for user"));
+                .orElseGet(() -> createDefaultTheme(user));
     }
 
-    public Optional<ChatbotThemeEntity> getThemeForUser(Long userId) {
-        return repository.findByUserId(userId);
+    /**
+     * Get a theme by userId or create default
+     */
+    public ChatbotThemeEntity getOrCreateThemeForUser(Long userId) {
+        return repository.findByUserId(userId)
+                .orElseGet(() -> {
+                    UserEntity user = userService.getUserById(userId)
+                            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                    return createDefaultTheme(user);
+                });
     }
 
+    /**
+     * Update theme values
+     */
     public ChatbotThemeEntity updateThemeForUser(
             Long userId,
             ChatbotThemeEntity updatedTheme,
             MultipartFile avatarFile
     ) throws IOException {
-
         ChatbotThemeEntity theme = repository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("Theme not found"));
+                .orElseGet(() -> getOrCreateThemeForUser(userId));
 
         theme.setHeaderColor(updatedTheme.getHeaderColor());
         theme.setBackgroundColor(updatedTheme.getBackgroundColor());
         theme.setTextColor(updatedTheme.getTextColor());
         theme.setIconColor(updatedTheme.getIconColor());
+        theme.setChipBackgroundColor(updatedTheme.getChipBackgroundColor());
+        theme.setChipHoverColor(updatedTheme.getChipHoverColor());
+        theme.setChipBorderColor(updatedTheme.getChipBorderColor());
 
         if (avatarFile != null && !avatarFile.isEmpty()) {
             String filename = System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
@@ -71,5 +83,15 @@ public class ChatbotThemeService {
         }
 
         return repository.save(theme);
+    }
+
+    private ChatbotThemeEntity createDefaultTheme(UserEntity user) {
+        ChatbotThemeEntity theme = new ChatbotThemeEntity();
+        theme.setUser(user);
+        return repository.save(theme);
+    }
+
+    public Optional<ChatbotThemeEntity> getThemeForUser(Long userId) {
+        return repository.findByUserId(userId);
     }
 }
