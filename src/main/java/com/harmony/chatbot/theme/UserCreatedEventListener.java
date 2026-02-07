@@ -10,26 +10,23 @@ import org.springframework.stereotype.Component;
 public class UserCreatedEventListener {
 
     private final ChatbotThemeRepository themeRepository;
+    private final UserService userService;
 
-    public UserCreatedEventListener(ChatbotThemeRepository themeRepository) {
+    public UserCreatedEventListener(ChatbotThemeRepository themeRepository,
+                                    UserService userService) {
         this.themeRepository = themeRepository;
+        this.userService = userService;
     }
 
     @EventListener
     public void handleUserCreated(UserCreatedEvent event) {
         Long userId = event.getUserId();
 
+        // Do nothing if theme already exists
         if (themeRepository.findByUserId(userId).isPresent()) return;
 
-        // Get user from event's source if possible
-        Object source = event.getSource();
-        UserEntity user;
-        if (source instanceof UserService) {
-            user = ((UserService) source).getUserById(userId)
-                    .orElseThrow(() -> new IllegalStateException("User not found"));
-        } else {
-            throw new IllegalStateException("Cannot retrieve UserService from event source");
-        }
+        UserEntity user = userService.getUserById(userId)
+                .orElseThrow(() -> new IllegalStateException("User not found for theme creation"));
 
         ChatbotThemeEntity theme = new ChatbotThemeEntity();
         theme.setUser(user);
