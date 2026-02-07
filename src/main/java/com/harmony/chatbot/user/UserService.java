@@ -1,7 +1,6 @@
 package com.harmony.chatbot.user;
 
 import com.harmony.chatbot.theme.ChatbotThemeService;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,15 +15,11 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final ChatbotThemeService themeService;
-    private final ApplicationEventPublisher eventPublisher;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public UserService(UserRepository userRepository,
-                       ChatbotThemeService themeService,
-                       ApplicationEventPublisher eventPublisher) {
+    public UserService(UserRepository userRepository, ChatbotThemeService themeService) {
         this.userRepository = userRepository;
         this.themeService = themeService;
-        this.eventPublisher = eventPublisher;
     }
 
     public Iterable<UserEntity> getAllUsers() {
@@ -40,17 +35,10 @@ public class UserService implements UserDetailsService {
     }
 
     public UserEntity saveUser(UserEntity user) {
-        boolean isNew = (user.getId() == null);
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-        UserEntity savedUser = userRepository.save(user);
-
-        if (isNew) {
-            eventPublisher.publishEvent(new UserCreatedEvent(this, savedUser.getId()));
-        }
-
-        return savedUser;
+        return userRepository.save(user);
     }
 
     @Transactional
