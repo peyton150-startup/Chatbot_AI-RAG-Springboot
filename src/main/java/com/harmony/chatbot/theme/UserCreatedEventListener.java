@@ -1,8 +1,7 @@
 package com.harmony.chatbot.theme;
 
-import com.harmony.chatbot.user.UserCreatedEvent;
 import com.harmony.chatbot.user.UserEntity;
-import com.harmony.chatbot.user.UserService;
+import com.harmony.chatbot.user.UserRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -10,24 +9,21 @@ import org.springframework.stereotype.Component;
 public class UserCreatedEventListener {
 
     private final ChatbotThemeRepository themeRepository;
-    private final UserService userService;
+    private final UserRepository userRepository;
 
     public UserCreatedEventListener(ChatbotThemeRepository themeRepository,
-                                    UserService userService) {
+                                    UserRepository userRepository) {
         this.themeRepository = themeRepository;
-        this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     @EventListener
     public void handleUserCreated(UserCreatedEvent event) {
         Long userId = event.getUserId();
 
-        // If theme already exists, do nothing
-        if (themeRepository.findByUserId(userId).isPresent()) {
-            return;
-        }
+        if (themeRepository.findByUserId(userId).isPresent()) return;
 
-        UserEntity user = userService.getUserById(userId)
+        UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found for theme creation"));
 
         ChatbotThemeEntity theme = new ChatbotThemeEntity();
