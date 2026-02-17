@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analytics - Admin</title>
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .stat-card {
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+        }
+
+        .question-bar {
+            background: #e9ecef;
+            border-radius: 6px;
+            height: 24px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .question-bar-fill {
+            background: #0d6efd;
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            padding-left: 8px;
+            font-size: 12px;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .log-table td {
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        .answer-cell {
+            max-width: 260px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .thread-msg {
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            max-width: 85%;
+            font-size: 13px;
+        }
+
+        .thread-user {
+            background: #0d6efd;
+            color: white;
+            margin-left: auto;
+        }
+
+        .thread-bot {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .rating-good {
+            color: #28a745;
+        }
+
+        .rating-bad {
+            color: #dc3545;
+        }
+
+        @media(max-width:768px) {
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-card .fs-2 {
+                font-size: 1.4rem !important;
+            }
+
+            .col-md-2 {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-primary px-3">
+        <span class="navbar-brand">Analytics</span>
+        <div>
+            <a href="/admin" class="btn btn-light me-2">← Admin</a>
+            <a href="/" class="btn btn-outline-light me-2">Chatbot</a>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button class="btn btn-outline-light">Logout</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+
+        <!-- Stat cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-2">
+                <div class="stat-card bg-primary">
+                    <div class="fs-2 fw-bold" id="totalCount">—</div>
+                    <div>Total Questions</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-success">
+                    <div class="fs-2 fw-bold" id="todayCount">—</div>
+                    <div>Today</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-info">
+                    <div class="fs-2 fw-bold" id="thumbsUp">—</div>
+                    <div>👍 Ratings</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-danger">
+                    <div class="fs-2 fw-bold" id="thumbsDown">—</div>
+                    <div>👎 Ratings</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-warning text-dark">
+                    <div class="fs-2 fw-bold" id="leadsCount">—</div>
+                    <div>Leads</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card bg-secondary">
+                    <div class="fs-2 fw-bold" id="sessionsCount">—</div>
+                    <div>Sessions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="analyticsTabs">
+            <li class="nav-item"><button class="nav-link active" data-tab="overview">Overview</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="logs">Chat Logs</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="threads">Conversations</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="leads">Leads</button></li>
+        </ul>
+
+        <!-- Overview tab -->
+        <div id="tab-overview">
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-header fw-bold">Top 10 Questions</div>
+                        <div class="card-body" id="topQuestionsContainer">
+                            <div class="text-muted">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="card">
+                        <div class="card-header fw-bold">Questions Per Day (Last 14 Days)</div>
+                        <div class="card-body" id="perDayContainer">
+                            <div class="text-muted">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat logs tab -->
+        <div id="tab-logs" style="display:none;">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="fw-bold">Recent Chat Logs</span>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportCSV('logs')">⬇ Export
+                            CSV</button>
+                        <button class="btn btn-sm btn-outline-secondary" id="prevPage" disabled>← Prev</button>
+                        <span id="pageInfo" class="small text-muted">Page 1</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="nextPage">Next →</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover log-table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:150px">Time</th>
+                                <th>Question</th>
+                                <th>Answer</th>
+                                <th style="width:70px">Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Threads tab -->
+        <div id="tab-threads" style="display:none;">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold">Sessions</div>
+                        <div class="list-group list-group-flush" id="sessionList"
+                            style="max-height:500px;overflow-y:auto;">
+                            <div class="text-muted p-3">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold" id="threadHeader">Select a session</div>
+                        <div class="card-body" id="threadBody" style="max-height:500px;overflow-y:auto;">
+                            <div class="text-muted">Click a session on the left to view the conversation.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leads tab -->
+        <div id="tab-leads" style="display:none;">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">Captured Leads</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="exportCSV('leads')">⬇ Export CSV</button>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Session</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leadsTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Answer modal -->
+    <div class="modal fade" id="answerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Full Answer</h5><button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-1">Question:</p>
+                    <p id="modalQuestion" class="fw-bold"></p>
+                    <p class="text-muted small mb-1 mt-3">Answer:</p>
+                    <p id="modalAnswer"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 0;
+        const pageSize = 20;
+
+        // ── Tabs ──────────────────────────────────────────────────────────────────
+
+        const tabs = ['overview', 'logs', 'threads', 'leads'];
+        document.querySelectorAll('#analyticsTabs button').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('#analyticsTabs button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                tabs.forEach(t => document.getElementById('tab-' + t).style.display = 'none');
+                const tab = btn.dataset.tab;
+                document.getElementById('tab-' + tab).style.display = 'block';
+                if (tab === 'threads') loadSessions();
+                if (tab === 'leads') loadLeads();
+                if (tab === 'logs') loadLogs(0);
+            };
+        });
+
+        // ── Summary ───────────────────────────────────────────────────────────────
+
+        async function loadSummary() {
+            try {
+                const res = await fetch('/api/analytics/summary');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                document.getElementById('totalCount').textContent = data.totalQuestions;
+                document.getElementById('thumbsUp').textContent = data.positiveRatings;
+                document.getElementById('thumbsDown').textContent = data.negativeRatings;
+
+                const today = new Date().toISOString().slice(0, 10);
+                const todayData = (data.questionsPerDay || []).find(d => d.date === today);
+                document.getElementById('todayCount').textContent = todayData ? todayData.count : 0;
+
+                renderTopQuestions(data.topQuestions || []);
+                renderPerDay(data.questionsPerDay || []);
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadLeadCount() {
+            try {
+                const res = await fetch('/api/leads');
+                if (!res.ok) return;
+                const leads = await res.json();
+                document.getElementById('leadsCount').textContent = leads.length;
+            } catch (e) { }
+        }
+
+        async function loadSessionCount() {
+            try {
+                const res = await fetch('/api/analytics/sessions?size=1000');
+                if (!res.ok) return;
+                const sessions = await res.json();
+                document.getElementById('sessionsCount').textContent = sessions.length;
+            } catch (e) { }
+        }
+
+        function renderTopQuestions(questions) {
+            const c = document.getElementById('topQuestionsContainer');
+            if (!questions.length) { c.innerHTML = '<p class="text-muted">No data yet.</p>'; return; }
+            const max = questions[0].count;
+            c.innerHTML = questions.map(q => {
+                const pct = Math.round((q.count / max) * 100);
+                const label = q.question.length > 50 ? q.question.slice(0, 50) + '…' : q.question;
+                return `<div class="mb-2">
+                <div class="d-flex justify-content-between mb-1">
+                    <small title="${escapeHtml(q.question)}">${escapeHtml(label)}</small>
+                    <small class="text-muted">${q.count}x</small>
+                </div>
+                <div class="question-bar"><div class="question-bar-fill" style="width:${pct}%">${pct > 20 ? q.count + 'x' : ''}</div></div>
+            </div>`;
+            }).join('');
+        }
+
+        function renderPerDay(days) {
+            const c = document.getElementById('perDayContainer');
+            if (!days.length) { c.innerHTML = '<p class="text-muted">No data yet.</p>'; return; }
+            const max = Math.max(...days.map(d => d.count));
+            const sorted = [...days].reverse();
+            c.innerHTML = `<div style="display:flex;align-items:flex-end;gap:6px;height:120px;">
+            ${sorted.map(d => {
+                const h = Math.max(8, Math.round((d.count / max) * 110));
+                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                    <span style="font-size:10px;color:#666">${d.count}</span>
+                    <div style="width:100%;height:${h}px;background:#0d6efd;border-radius:4px 4px 0 0;" title="${d.date}"></div>
+                    <span style="font-size:9px;color:#999;writing-mode:vertical-rl;transform:rotate(180deg);height:32px;">${d.date.slice(5)}</span>
+                </div>`;
+            }).join('')}
+        </div>`;
+        }
+
+        // ── Logs ──────────────────────────────────────────────────────────────────
+
+        async function loadLogs(page) {
+            try {
+                const res = await fetch(`/api/analytics/logs?page=${page}&size=${pageSize}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                const tbody = document.getElementById('logTableBody');
+                if (!data.content.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No logs yet.</td></tr>'; return; }
+                tbody.innerHTML = data.content.map(log => {
+                    const time = new Date(log.askedAt).toLocaleString();
+                    const answer = log.answer || '—';
+                    const rating = log.rating === 1 ? '<span class="rating-good">👍</span>' : log.rating === -1 ? '<span class="rating-bad">👎</span>' : '—';
+                    return `<tr>
+                    <td class="text-muted">${time}</td>
+                    <td>${escapeHtml(log.question)}</td>
+                    <td class="answer-cell" onclick="showAnswer('${escapeJs(log.question)}','${escapeJs(answer)}')">${escapeHtml(answer)}</td>
+                    <td>${rating}</td>
+                </tr>`;
+                }).join('');
+                document.getElementById('pageInfo').textContent = `Page ${page + 1} of ${data.totalPages}`;
+                document.getElementById('prevPage').disabled = page === 0;
+                document.getElementById('nextPage').disabled = page >= data.totalPages - 1;
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('prevPage').onclick = () => { currentPage--; loadLogs(currentPage); };
+        document.getElementById('nextPage').onclick = () => { currentPage++; loadLogs(currentPage); };
+
+        // ── Threads ───────────────────────────────────────────────────────────────
+
+        async function loadSessions() {
+            try {
+                const res = await fetch('/api/analytics/sessions?size=50');
+                if (!res.ok) return;
+                const sessions = await res.json();
+                const list = document.getElementById('sessionList');
+                if (!sessions.length) { list.innerHTML = '<div class="text-muted p-3">No sessions yet.</div>'; return; }
+                list.innerHTML = sessions.map((s, i) =>
+                    `<button class="list-group-item list-group-item-action" onclick="loadThread('${s}')">
+                    Session ${i + 1} <span class="text-muted small d-block">${s.slice(0, 12)}…</span>
+                </button>`
+                ).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadThread(sessionId) {
+            try {
+                document.querySelectorAll('#sessionList button').forEach(b => b.classList.remove('active'));
+                const res = await fetch(`/api/analytics/sessions/${sessionId}`);
+                if (!res.ok) return;
+                const msgs = await res.json();
+                document.getElementById('threadHeader').textContent = `Session: ${sessionId.slice(0, 16)}…`;
+                const body = document.getElementById('threadBody');
+                if (!msgs.length) { body.innerHTML = '<p class="text-muted">No messages.</p>'; return; }
+                body.innerHTML = msgs.map(m => `
+                <div style="display:flex;flex-direction:column;">
+                    <div class="thread-msg thread-user" style="align-self:flex-end">${escapeHtml(m.question)}</div>
+                    <div class="thread-msg thread-bot">${escapeHtml(m.answer || '')}</div>
+                    <div class="text-muted" style="font-size:10px;text-align:right;margin-bottom:8px;">
+                        ${new Date(m.askedAt).toLocaleTimeString()}
+                        ${m.rating === 1 ? '👍' : m.rating === -1 ? '👎' : ''}
+                    </div>
+                </div>`).join('');
+                body.scrollTop = body.scrollHeight;
+            } catch (e) { console.error(e); }
+        }
+
+        // ── Leads ─────────────────────────────────────────────────────────────────
+
+        async function loadLeads() {
+            try {
+                const res = await fetch('/api/leads');
+                if (!res.ok) return;
+                const leads = await res.json();
+                const tbody = document.getElementById('leadsTableBody');
+                if (!leads.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No leads yet.</td></tr>'; return; }
+                tbody.innerHTML = leads.map(l => `<tr>
+                <td class="text-muted">${new Date(l.capturedAt).toLocaleString()}</td>
+                <td>${escapeHtml(l.name || '—')}</td>
+                <td>${escapeHtml(l.email || '—')}</td>
+                <td class="text-muted small">${l.sessionId ? l.sessionId.slice(0, 10) + '…' : '—'}</td>
+            </tr>`).join('');
+            } catch (e) { console.error(e); }
+        }
+
+        // ── CSV Export ────────────────────────────────────────────────────────────
+
+        async function exportCSV(type) {
+            try {
+                let rows, filename, headers;
+                if (type === 'leads') {
+                    const res = await fetch('/api/leads');
+                    if (!res.ok) { alert('Failed to fetch leads'); return; }
+                    const leads = await res.json();
+                    headers = ['ID', 'Name', 'Email', 'Session', 'Captured At'];
+                    rows = leads.map(l => [l.id, l.name || '', l.email || '', l.sessionId || '', l.capturedAt]);
+                    filename = 'leads.csv';
+                } else if (type === 'logs') {
+                    const res = await fetch('/api/analytics/logs?page=0&size=10000');
+                    if (!res.ok) { alert('Failed to fetch logs'); return; }
+                    const data = await res.json();
+                    headers = ['ID', 'Question', 'Answer', 'Session', 'Asked At', 'Rating'];
+                    rows = data.content.map(l => [l.id, l.question, l.answer || '', l.sessionId || '', l.askedAt, l.rating]);
+                    filename = 'chat_logs.csv';
+                }
+                const escape = v => '"' + String(v).replace(/"/g, '""') + '"';
+                const csv = [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename; a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) { alert('Export failed: ' + e.message); }
+        }
+
+        // ── Modal ─────────────────────────────────────────────────────────────────
+
+        const answerModal = new bootstrap.Modal(document.getElementById('answerModal'));
+        function showAnswer(q, a) { document.getElementById('modalQuestion').textContent = q; document.getElementById('modalAnswer').textContent = a; answerModal.show(); }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────
+
+        function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function escapeJs(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' '); }
+
+        // ── Init ──────────────────────────────────────────────────────────────────
+        loadSummary();
+        loadLeadCount();
+        loadSessionCount();
+    </script>
+</body>
+
+</html>

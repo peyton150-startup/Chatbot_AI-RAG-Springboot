@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard</title>
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .chip-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e9ecef;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 13px;
+            margin: 4px;
+        }
+
+        .chip-tag button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .chip-tag button:hover {
+            color: #dc3545;
+        }
+
+        .active-theme-row {
+            background-color: #d1ecf1 !important;
+        }
+
+        .active-theme-badge {
+            font-size: 11px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 12px;
+            }
+
+            .row.g-3>[class*="col-md"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            .table-responsive-stack td,
+            .table-responsive-stack th {
+                display: block;
+                width: 100%;
+            }
+
+            .table-responsive-stack td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                display: block;
+                font-size: 11px;
+                color: #666;
+            }
+
+            .navbar .btn {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+
+            #chatWindow {
+                width: calc(100vw - 32px);
+                right: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-primary px-3">
+        <span class="navbar-brand">Admin Dashboard</span>
+        <div>
+            <a href="/admin/analytics" class="btn btn-warning me-2">Analytics</a>
+            <a href="/" class="btn btn-light me-2">Chatbot</a>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button class="btn btn-outline-light">Logout</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+
+        <div id="themeAlert" class="alert d-none" role="alert"></div>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- USERS -->
+        <h3>Users</h3>
+
+        <!-- Add User Form -->
+        <div class="card mb-4 border-success">
+            <div class="card-header bg-success text-white fw-bold">Add New User</div>
+            <div class="card-body">
+                <form th:action="@{/admin/users}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" required placeholder="e.g. johndoe">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required
+                                placeholder="john@example.com">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Role</label>
+                            <select name="role" class="form-select">
+                                <option value="USER" selected>USER</option>
+                                <option value="ADMIN">ADMIN</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-success">Add User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit user form — only shown when editMode=true -->
+        <div th:if="${editMode}" class="card mb-4 border-warning">
+            <div class="card-header bg-warning text-dark fw-bold">Edit User</div>
+            <div class="card-body">
+                <form th:action="@{/admin/users}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="id" th:value="${user.id}">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" th:value="${user.username}" class="form-control"
+                                required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" th:value="${user.email}" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Role</label>
+                            <select name="role" class="form-select">
+                                <option value="ADMIN" th:selected="${user.role == 'ADMIN'}">ADMIN</option>
+                                <option value="USER" th:selected="${user.role == 'USER'}">USER</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">New Password <span class="text-muted small">(leave blank to
+                                    keep)</span></label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-warning">Save Changes</button>
+                        <a href="/admin" class="btn btn-outline-secondary ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <p class="text-muted small mb-0">
+                The <span class="badge bg-info text-dark">Active Theme</span> user's colours, avatar, and banner
+                are what visitors see on the public chatbot widget.
+            </p>
+            <button class="btn btn-sm btn-outline-secondary" onclick="exportCSV('users')">⬇ Export Users CSV</button>
+        </div>
+        <table class="table table-striped table-responsive-stack" id="usersTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="u : ${users}" th:id="'user-row-' + ${u.id}">
+                    <td th:text="${u.id}"></td>
+                    <td th:text="${u.username}"></td>
+                    <td th:text="${u.email}"></td>
+                    <td th:text="${u.role}"></td>
+                    <td>
+                        <a th:href="@{'/admin/users/' + ${u.id} + '/edit'}" class="btn btn-sm btn-warning">Edit</a>
+                        <form th:action="@{'/admin/users/' + ${u.id} + '/delete'}" method="post" class="d-inline">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                        <button class="btn btn-sm btn-info use-theme-btn" th:data-userid="${u.id}"
+                            th:data-username="${u.username}">
+                            Use This Theme
+                        </button>
+                        <span class="badge bg-info text-dark active-theme-badge d-none"
+                            th:id="'active-badge-' + ${u.id}">
+                            ✓ Active Theme
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr class="my-5">
+
+        <h3>Chatbot Appearance</h3>
+        <p class="text-muted small">You are editing the theme for: <strong id="editingForLabel">your account</strong>
+        </p>
+        <form id="themeForm" enctype="multipart/form-data">
+            <div class="row g-3">
+
+                <div class="col-md-3">
+                    <label class="form-label">Header Color</label>
+                    <input type="color" id="headerColor" name="headerColor" value="#0d6efd"
+                        class="form-control form-control-color w-100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Background Color</label>
+                    <input type="color" id="backgroundColor" name="backgroundColor" value="#ffffff"
+                        class="form-control form-control-color w-100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Text Color</label>
+                    <input type="color" id="textColor" name="textColor" value="#000000"
+                        class="form-control form-control-color w-100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Icon Color</label>
+                    <input type="color" id="iconColor" name="iconColor" value="#0d6efd"
+                        class="form-control form-control-color w-100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Chip Background</label>
+                    <input type="color" id="chipBackgroundColor" name="chipBackgroundColor" value="#f0f0f0"
+                        class="form-control form-control-color w-100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Chip Hover</label>
+                    <input type="color" id="chipHoverColor" name="chipHoverColor" value="#e0e0e0"
+                        class="form-control form-control-color w-100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Chip Border</label>
+                    <input type="color" id="chipBorderColor" name="chipBorderColor" value="#cccccc"
+                        class="form-control form-control-color w-100">
+                </div>
+
+                <div class="col-12">
+                    <hr>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Booking URL</label>
+                    <p class="text-muted small mb-2">When a visitor asks about booking or appointments, a button will
+                        appear linking here.</p>
+                    <input type="url" id="bookingUrl" name="bookingUrl" class="form-control"
+                        placeholder="https://calendly.com/yourname" style="max-width:480px;">
+                </div>
+
+                <div class="col-12">
+                    <hr>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Suggestion Chips</label>
+                    <p class="text-muted small mb-2">Quick-tap buttons shown in the chatbot. Press Enter or click Add.
+                    </p>
+                    <div id="chipTags" class="border rounded p-2 mb-2 bg-white" style="min-height:48px;"></div>
+                    <div class="input-group" style="max-width:480px;">
+                        <input type="text" id="chipInput" class="form-control"
+                            placeholder="e.g. What services do you offer?">
+                        <button type="button" class="btn btn-outline-primary" id="addChipBtn">Add</button>
+                    </div>
+                    <input type="hidden" id="suggestionsJson" name="suggestionsJson" value="[]">
+                </div>
+
+                <div class="col-12">
+                    <hr>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Avatar Icon</label>
+                    <p class="text-muted small mb-2">Circular icon on the chat bubble and header.</p>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <img id="avatarPreview" src="" alt=""
+                            style="display:none;width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #ccc;">
+                        <span class="text-muted small" id="avatarPlaceholder">No avatar set</span>
+                    </div>
+                    <input type="file" id="avatarFile" name="avatar" accept="image/*" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Banner Image</label>
+                    <p class="text-muted small mb-2">Full-width image at top of chat window.</p>
+                    <div class="mb-2">
+                        <img id="bannerPreview" src="" alt=""
+                            style="display:none;width:100%;max-width:360px;height:120px;object-fit:cover;object-position:center top;border-radius:6px;border:2px solid #ccc;">
+                        <span class="text-muted small" id="bannerPlaceholder">No banner set</span>
+                    </div>
+                    <input type="file" id="bannerFile" name="banner" accept="image/*" class="form-control">
+                </div>
+
+            </div>
+            <button class="btn btn-primary mt-4" type="submit">Save Chatbot Theme</button>
+        </form>
+        <hr class="my-5">
+
+        <h3>Knowledge Base</h3>
+        <p class="text-muted small">Upload a new <code>vectors.json</code> file to update what the chatbot knows. The
+            file must be pre-embedded using the same model (<code>text-embedding-3-large</code>).</p>
+        <div class="card border-info">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Upload vectors.json</label>
+                    <input type="file" id="ragFile" accept=".json" class="form-control" style="max-width:400px;">
+                </div>
+                <button class="btn btn-primary" id="uploadRagBtn">Upload Knowledge Base</button>
+                <div id="ragStatus" class="mt-2 small"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        let chips = [];
+
+        function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        function renderChips() {
+            const c = document.getElementById('chipTags');
+            c.innerHTML = chips.length === 0 ? '<span class="text-muted small">No suggestions yet</span>'
+                : chips.map((ch, i) => `<span class="chip-tag">${escapeHtml(ch)}<button type="button" onclick="removeChip(${i})">&times;</button></span>`).join('');
+            document.getElementById('suggestionsJson').value = JSON.stringify(chips);
+        }
+        function addChip(t) { t = t.trim(); if (!t || chips.includes(t)) return; chips.push(t); renderChips(); }
+        function removeChip(i) { chips.splice(i, 1); renderChips(); }
+        document.getElementById('addChipBtn').onclick = () => { addChip(document.getElementById('chipInput').value); document.getElementById('chipInput').value = ''; };
+        document.getElementById('chipInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addChipBtn').click(); } });
+
+        function showAlert(msg, type) { const el = document.getElementById('themeAlert'); el.className = `alert alert-${type}`; el.textContent = msg; el.classList.remove('d-none'); setTimeout(() => el.classList.add('d-none'), 4000); }
+
+        // ── Active theme badge ─────────────────────────────────────────────────────
+
+        // Reads active theme user ID, highlights the correct row, and updates the "editing for" label
+        async function loadActiveThemeUser() {
+            try {
+                const res = await fetch('/admin/active-theme');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.activeThemeUserId && data.activeThemeUserId !== -1) {
+                    currentActiveUserId = data.activeThemeUserId;
+                    markActiveRow(data.activeThemeUserId);
+                    updateEditingLabel(data.activeThemeUserId);
+                    await loadCurrentTheme(data.activeThemeUserId);
+                } else {
+                    // No active theme user set yet — load the logged-in admin's own theme
+                    await loadCurrentTheme(null);
+                }
+            } catch (e) { }
+        }
+
+        function markActiveRow(userId) {
+            // Clear any previous highlights
+            document.querySelectorAll('.active-theme-row').forEach(r => r.classList.remove('active-theme-row'));
+            document.querySelectorAll('.active-theme-badge').forEach(b => b.classList.add('d-none'));
+            // Highlight the new active user row
+            const row = document.getElementById('user-row-' + userId);
+            const badge = document.getElementById('active-badge-' + userId);
+            if (row) row.classList.add('active-theme-row');
+            if (badge) badge.classList.remove('d-none');
+        }
+
+        function updateEditingLabel(userId) {
+            // Find the username from the table row and update the label above the theme form
+            const row = document.getElementById('user-row-' + userId);
+            if (row) {
+                const username = row.cells[1].textContent;
+                document.getElementById('editingForLabel').textContent = username + "'s account";
+            }
+        }
+
+        // ── Use This Theme buttons ─────────────────────────────────────────────────
+
+        document.querySelectorAll('.use-theme-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const userId = btn.dataset.userid;
+                const username = btn.dataset.username;
+                try {
+                    const res = await fetch('/admin/active-theme', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken
+                        },
+                        body: JSON.stringify({ userId: parseInt(userId) })
+                    });
+                    if (res.ok) {
+                        currentActiveUserId = parseInt(userId);
+                        markActiveRow(userId);
+                        updateEditingLabel(userId);
+                        showAlert(`Widget is now using ${username}'s theme.`, 'success');
+                        localStorage.setItem('themeUpdated', Date.now().toString());
+                        // Reload the theme form to show the newly active user's colours/avatar/banner
+                        await loadCurrentTheme(currentActiveUserId);
+                    } else {
+                        showAlert('Failed to update active theme.', 'danger');
+                    }
+                } catch (e) {
+                    showAlert('Error: ' + e.message, 'danger');
+                }
+            });
+        });
+
+        // ── Theme form ─────────────────────────────────────────────────────────────
+
+        // Loads a theme into the form. If userId is provided, fetches that user's theme
+        // directly (used when active theme user is set). Otherwise falls back to /api/theme
+        // which returns the logged-in user's own theme.
+        async function loadCurrentTheme(userId) {
+            try {
+                const url = userId ? `/api/theme/${userId}?t=${Date.now()}` : `/api/theme?t=${Date.now()}`;
+                const res = await fetch(url);
+                if (!res.ok) return;
+                const theme = await res.json();
+                // Reset avatar and banner previews and file inputs before applying new theme
+                // so stale images and blobs from a previous user don't carry over
+                document.getElementById('avatarPreview').style.display = 'none';
+                document.getElementById('avatarPreview').src = '';
+                document.getElementById('avatarPlaceholder').style.display = 'inline';
+                document.getElementById('bannerPreview').style.display = 'none';
+                document.getElementById('bannerPreview').src = '';
+                document.getElementById('bannerPlaceholder').style.display = 'inline';
+                // Reset file inputs by creating a fresh element — the only reliable cross-browser way.
+                // cloneNode copies structure but we immediately clear the value on the new element.
+                const avatarFile = document.getElementById('avatarFile');
+                const freshAvatar = document.createElement('input');
+                freshAvatar.type = 'file'; freshAvatar.id = 'avatarFile';
+                freshAvatar.name = 'avatar'; freshAvatar.accept = 'image/*';
+                freshAvatar.className = avatarFile.className;
+                avatarFile.replaceWith(freshAvatar);
+
+                const bannerFile = document.getElementById('bannerFile');
+                const freshBanner = document.createElement('input');
+                freshBanner.type = 'file'; freshBanner.id = 'bannerFile';
+                freshBanner.name = 'banner'; freshBanner.accept = 'image/*';
+                freshBanner.className = bannerFile.className;
+                bannerFile.replaceWith(freshBanner);
+
+                // Re-attach change listeners to the new inputs
+                attachFileListeners();
+                // Clear any compressed blobs from the previous user
+                compressedAvatar = null;
+                compressedBanner = null;
+                if (theme.headerColor) document.getElementById('headerColor').value = theme.headerColor;
+                if (theme.backgroundColor) document.getElementById('backgroundColor').value = theme.backgroundColor;
+                if (theme.textColor) document.getElementById('textColor').value = theme.textColor;
+                if (theme.iconColor) document.getElementById('iconColor').value = theme.iconColor;
+                if (theme.chipBackgroundColor) document.getElementById('chipBackgroundColor').value = theme.chipBackgroundColor;
+                if (theme.chipHoverColor) document.getElementById('chipHoverColor').value = theme.chipHoverColor;
+                if (theme.chipBorderColor) document.getElementById('chipBorderColor').value = theme.chipBorderColor;
+                if (theme.bookingUrl) document.getElementById('bookingUrl').value = theme.bookingUrl;
+                if (theme.suggestionsJson) { try { chips = JSON.parse(theme.suggestionsJson); } catch (e) { chips = []; } }
+                renderChips();
+                if (theme.avatarData) { document.getElementById('avatarPreview').src = theme.avatarData; document.getElementById('avatarPreview').style.display = 'inline-block'; document.getElementById('avatarPlaceholder').style.display = 'none'; }
+                if (theme.bannerData) { document.getElementById('bannerPreview').src = theme.bannerData; document.getElementById('bannerPreview').style.display = 'block'; document.getElementById('bannerPlaceholder').style.display = 'none'; }
+            } catch (e) { console.error(e); }
+        }
+
+        function compressImage(file, maxW, maxH, quality) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    let w = img.width, h = img.height;
+                    if (w > maxW || h > maxH) {
+                        const ratio = Math.min(maxW / w, maxH / h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    canvas.toBlob(resolve, 'image/jpeg', quality);
+                };
+                img.src = url;
+            });
+        }
+
+        let compressedAvatar = null;
+        let compressedBanner = null;
+        let currentActiveUserId = null; // tracks which user's theme is loaded in the form
+
+        function attachFileListeners() {
+            document.getElementById('avatarFile').addEventListener('change', async function () {
+                const f = this.files[0]; if (!f) return;
+                compressedAvatar = await compressImage(f, 200, 200, 0.8);
+                document.getElementById('avatarPreview').src = URL.createObjectURL(compressedAvatar);
+                document.getElementById('avatarPreview').style.display = 'inline-block';
+                document.getElementById('avatarPlaceholder').style.display = 'none';
+                showAlert(`Avatar compressed to ${Math.round(compressedAvatar.size / 1024)}KB`, 'info');
+            });
+
+            document.getElementById('bannerFile').addEventListener('change', async function () {
+                const f = this.files[0]; if (!f) return;
+                compressedBanner = await compressImage(f, 800, 200, 0.85);
+                document.getElementById('bannerPreview').src = URL.createObjectURL(compressedBanner);
+                document.getElementById('bannerPreview').style.display = 'block';
+                document.getElementById('bannerPlaceholder').style.display = 'none';
+                showAlert(`Banner compressed to ${Math.round(compressedBanner.size / 1024)}KB`, 'info');
+            });
+        }
+
+        attachFileListeners(); // attach on initial page load
+
+        document.getElementById('themeForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const fd = new FormData();
+            fd.append('headerColor', document.getElementById('headerColor').value);
+            fd.append('backgroundColor', document.getElementById('backgroundColor').value);
+            fd.append('textColor', document.getElementById('textColor').value);
+            fd.append('iconColor', document.getElementById('iconColor').value);
+            fd.append('chipBackgroundColor', document.getElementById('chipBackgroundColor').value);
+            fd.append('chipHoverColor', document.getElementById('chipHoverColor').value);
+            fd.append('chipBorderColor', document.getElementById('chipBorderColor').value);
+            fd.append('suggestionsJson', document.getElementById('suggestionsJson').value);
+            fd.append('bookingUrl', document.getElementById('bookingUrl').value);
+            // Only send image data if the user explicitly picked a new file this session.
+            // compressedAvatar/Banner are always cleared when switching users, so a save
+            // will never accidentally overwrite another user's image with a stale blob.
+            if (compressedAvatar) fd.append('avatar', compressedAvatar, 'avatar.jpg');
+            if (compressedBanner) fd.append('banner', compressedBanner, 'banner.jpg');
+            try {
+                const res = await fetch('/admin/theme', { method: 'POST', headers: { [csrfHeader]: csrfToken }, body: fd, redirect: 'manual' });
+                if (res.ok || res.type === 'opaqueredirect' || res.status === 302) {
+                    showAlert('Theme saved!', 'success');
+                    localStorage.setItem('themeUpdated', Date.now().toString());
+                    compressedAvatar = null; compressedBanner = null;
+                    await loadCurrentTheme(currentActiveUserId);
+                } else {
+                    const b = await res.text().catch(() => '');
+                    showAlert('Failed: ' + res.status + (b ? ' — ' + b : ''), 'danger');
+                }
+            } catch (err) { showAlert('Error: ' + err.message, 'danger'); }
+        });
+
+        loadActiveThemeUser(); // sets currentActiveUserId and loads the correct theme into the form
+
+        // ── CSV Export ────────────────────────────────────────────────────────────
+
+        async function exportCSV(type) {
+            try {
+                let rows, filename, headers;
+                if (type === 'users') {
+                    // Build from the table already on the page — no extra API call needed
+                    const table = document.getElementById('usersTable');
+                    headers = ['ID', 'Username', 'Email', 'Role'];
+                    rows = [...table.querySelectorAll('tbody tr')].map(tr => {
+                        const cells = tr.querySelectorAll('td');
+                        return [cells[0].textContent, cells[1].textContent, cells[2].textContent, cells[3].textContent];
+                    });
+                    filename = 'users.csv';
+                } else if (type === 'leads') {
+                    const res = await fetch('/api/leads');
+                    if (!res.ok) { showAlert('Failed to fetch leads', 'danger'); return; }
+                    const leads = await res.json();
+                    headers = ['ID', 'Name', 'Email', 'Session', 'Captured At'];
+                    rows = leads.map(l => [l.id, l.name || '', l.email || '', l.sessionId || '', l.capturedAt]);
+                    filename = 'leads.csv';
+                } else if (type === 'logs') {
+                    const res = await fetch('/api/analytics/logs?page=0&size=10000');
+                    if (!res.ok) { showAlert('Failed to fetch logs', 'danger'); return; }
+                    const data = await res.json();
+                    headers = ['ID', 'Question', 'Answer', 'Session', 'Asked At', 'Rating'];
+                    rows = data.content.map(l => [l.id, l.question, l.answer || '', l.sessionId || '', l.askedAt, l.rating]);
+                    filename = 'chat_logs.csv';
+                }
+
+                const escape = v => '"' + String(v).replace(/"/g, '""') + '"';
+                const csv = [headers, ...rows].map(r => r.map(escape).join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename; a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) { showAlert('Export failed: ' + e.message, 'danger'); }
+        }
+
+        // ── RAG Upload ────────────────────────────────────────────────────────────
+
+        document.getElementById('uploadRagBtn').addEventListener('click', async () => {
+            const file = document.getElementById('ragFile').files[0];
+            const status = document.getElementById('ragStatus');
+            if (!file) { status.innerHTML = '<span class="text-danger">Please select a vectors.json file first.</span>'; return; }
+
+            // Basic client-side validation — just confirm it's a non-empty JSON array.
+            // Field name validation is done server-side with a clear error message,
+            // since exact field names depend on the Page class definition.
+            try {
+                const fileText = await file.text();
+                const parsed = JSON.parse(fileText);
+                if (!Array.isArray(parsed) || parsed.length === 0) {
+                    status.innerHTML = '<span class="text-danger">Invalid file: must be a non-empty JSON array.</span>';
+                    return;
+                }
+            } catch (e) {
+                status.innerHTML = `<span class="text-danger">Invalid JSON: ${e.message}</span>`;
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            status.innerHTML = '<span class="text-muted">Uploading…</span>';
+
+            try {
+                const res = await fetch('/admin/rag/upload', {
+                    method: 'POST',
+                    headers: { [csrfHeader]: csrfToken },
+                    body: fd
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    status.innerHTML = `
+                    <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+                        <strong>✓ Upload successful!</strong> ${data.pageCount} pages loaded into the knowledge base. The chatbot is now using the new content.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+                    // Reset the file input
+                    document.getElementById('ragFile').value = '';
+                } else {
+                    const msg = await res.text();
+                    status.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                        <strong>Upload failed:</strong> ${msg}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
+                }
+            } catch (e) {
+                status.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+                    <strong>Error:</strong> ${e.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            }
+        });
+    </script>
+</body>
+
+</html>

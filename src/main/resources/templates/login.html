@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:style="'--chat-header:' + (${theme.headerColor} ?: '#0d6efd') +
+                '; --chat-bg:' + (${theme.backgroundColor} ?: '#ffffff') +
+                '; --chat-text:' + (${theme.textColor} ?: '#000000') +
+                '; --chat-icon:' + (${theme.iconColor} ?: '#0d6efd') +
+                '; --chat-chip-bg:' + (${theme.chipBackgroundColor} ?: '#f0f0f0') +
+                '; --chat-chip-hover:' + (${theme.chipHoverColor} ?: '#e0e0e0') +
+                '; --chat-chip-border:' + (${theme.chipBorderColor} ?: '#ccc')">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--chat-bg);
+            color: var(--chat-text);
+        }
+
+        .btn-chatbot {
+            background-color: var(--chat-icon);
+            color: white;
+            border: none;
+        }
+
+        .btn-chatbot:hover {
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card p-4">
+                <h3 class="card-title mb-3 text-center">Login</h3>
+                <form th:action="@{/login}" method="post">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" id="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                    <div th:if="${param.error}" class="text-danger mt-2">Invalid username or password.</div>
+                    <div th:if="${param.logout}" class="text-success mt-2">You have been logged out.</div>
+                </form>
+
+                <a th:href="@{/}" class="btn btn-chatbot w-100 mt-3">Go to Chatbot</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
