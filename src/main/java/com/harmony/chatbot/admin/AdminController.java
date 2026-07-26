@@ -14,7 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 import java.util.List;
 
@@ -144,14 +147,8 @@ public class AdminController {
         if (bookingUrl != null)
             f.setBookingUrl(bookingUrl.isBlank() ? "" : bookingUrl.trim());
 
-        if (avatar != null && !avatar.isEmpty()) {
-            String mime = avatar.getContentType() != null ? avatar.getContentType() : "image/jpeg";
-            f.setAvatarData("data:" + mime + ";base64," + Base64.getEncoder().encodeToString(avatar.getBytes()));
-        }
-        if (banner != null && !banner.isEmpty()) {
-            String mime = banner.getContentType() != null ? banner.getContentType() : "image/jpeg";
-            f.setBannerData("data:" + mime + ";base64," + Base64.getEncoder().encodeToString(banner.getBytes()));
-        }
+        if (avatar != null && !avatar.isEmpty()) f.setAvatarData(toSafePngDataUrl(avatar));
+        if (banner != null && !banner.isEmpty()) f.setBannerData(toSafePngDataUrl(banner));
 
         themeService.updateThemeForUser(targetUser, f, null);
         return ResponseEntity.ok("Theme saved");
@@ -171,5 +168,19 @@ public class AdminController {
         }
         // Fallback: save to the logged-in admin's own theme
         return userService.getUserByUsernameOptional(currentUser.getUsername()).orElse(null);
+    }
+
+    private String toSafePngDataUrl(MultipartFile file) throws IOException {
+        if (file.getSize() > 2 * 1024 * 1024 || file.getContentType() == null
+                || !file.getContentType().startsWith("image/")) {
+            throw new IllegalArgumentException("Images must be smaller than 2 MB");
+        }
+        BufferedImage image = ImageIO.read(file.getInputStream());
+        if (image == null || image.getWidth() > 4096 || image.getHeight() > 4096) {
+            throw new IllegalArgumentException("Invalid image or image dimensions");
+        }
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        if (!ImageIO.write(image, "png", output)) throw new IllegalArgumentException("Unsupported image format");
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(output.toByteArray());
     }
 }

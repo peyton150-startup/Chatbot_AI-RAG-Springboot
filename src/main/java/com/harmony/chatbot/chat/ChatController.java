@@ -5,7 +5,10 @@ import com.harmony.chatbot.analytics.ChatLogRepository;
 import com.harmony.chatbot.analytics.ChatLogService;
 import com.harmony.chatbot.rag.RAGService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -18,11 +21,17 @@ public class ChatController {
     private final RAGService ragService;
     private final ChatLogService chatLogService;
     private final ChatLogRepository chatLogRepository;
+    private final ChatRateLimiter rateLimiter;
+    private final int maxQuestionLength;
 
-    public ChatController(RAGService ragService, ChatLogService chatLogService, ChatLogRepository chatLogRepository) {
+    public ChatController(RAGService ragService, ChatLogService chatLogService, ChatLogRepository chatLogRepository,
+                          ChatRateLimiter rateLimiter,
+                          @Value("${app.chat.max-question-length:2000}") int maxQuestionLength) {
         this.ragService = ragService;
         this.chatLogService = chatLogService;
         this.chatLogRepository = chatLogRepository;
+        this.rateLimiter = rateLimiter;
+        this.maxQuestionLength = maxQuestionLength;
     }
 
     /** Called by the new widget — sends JSON { "question": "..." } */
@@ -42,6 +51,14 @@ public class ChatController {
     }
 
     private Map<String, Object> process(String question, HttpServletRequest request) {
+        if (question == null || question.isBlank() || question.length() > maxQuestionLength) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Question must contain between 1 and " + maxQuestionLength + " characters");
+        }
+        if (!rateLimiter.tryAcquire(request.getRemoteAddr())) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Too many requests. Please wait a minute and try again.");
+        }
         String sessionId = request.getSession(true).getId();
 
         // Pass sessionId into RAGService so it can load conversation history
