@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -65,7 +66,8 @@ public class SecurityConfig {
                                 "/css/**", "/js/**", "/images/**", "/uploads/**",
                                 "/chatbot-embed.js")
                         .permitAll()
-                        .requestMatchers("/api/chat", "/api/rag-chat", "/api/theme", "/api/theme/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/chat").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/theme", "/api/theme/**").permitAll()
                         .requestMatchers("/api/leads").permitAll()
                         .requestMatchers("/api/analytics/rate").permitAll()
                         .requestMatchers("/api/analytics/**").hasAuthority("ADMIN")
