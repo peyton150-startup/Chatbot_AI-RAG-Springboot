@@ -62,6 +62,7 @@ public class NvidiaAiClient implements AiClient {
         body.put("messages", serializedMessages);
         body.put("temperature", 0.2);
         body.put("max_tokens", 512);
+        body.put("chat_template_kwargs", Map.of("enable_thinking", false));
 
         JsonNode root = post("/chat/completions", body, properties.getChatModel());
         String content = root.path("choices").path(0).path("message").path("content").asText("").trim();

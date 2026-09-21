@@ -97,6 +97,7 @@ class NvidiaAiClientTest {
         assertEquals("nvidia/nemotron-3.5-lightning-30b-a3b", requestBody.get().path("model").asText());
         assertEquals("system", requestBody.get().path("messages").get(0).path("role").asText());
         assertEquals("Do you offer walks?", requestBody.get().path("messages").get(1).path("content").asText());
+        assertFalse(requestBody.get().path("chat_template_kwargs").path("enable_thinking").asBoolean(true));
     }
 
     @Test

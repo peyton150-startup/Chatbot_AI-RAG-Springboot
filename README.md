@@ -131,6 +131,8 @@ $env:BOOTSTRAP_ADMIN_PASSWORD = "use-a-long-unique-password"
 .\mvnw.cmd spring-boot:run
 ```
 
+The key file in that example must contain only the `nvapi-...` token. If your secret file also contains a label such as `NVIDIA_API_KEY=`, extract the token or copy only its value into the environment variable; passing the whole labeled line results in HTTP 401.
+
 On macOS or Linux, use `./mvnw spring-boot:run` and export the same variables.
 
 The application is then available at:
@@ -265,8 +267,9 @@ Validation performed against the `codex/nvidia-rag` branch on September 21, 2026
 | Automated tests | Pass: provider, vector store, RAG, rebuild, and Spring-construction tests |
 | NVIDIA embedding authentication | Pass; live endpoint returned 2,048 dimensions |
 | NVIDIA Lightning authentication | Pass; live endpoint returned chat content |
-| Spring Boot startup with PostgreSQL | Constructor regressions fixed and covered; final container rerun pending |
-| Browser/API end-to-end flow | Final container rerun pending |
+| Spring Boot startup with PostgreSQL | Pass in Docker against PostgreSQL 16 using the documented local schema override |
+| RAG API end-to-end flow | Pass; live `/api/chat` request embedded the question, retrieved the four-week refund policy, generated a concise answer, and persisted the chat log |
+| Reasoning-output safety | Pass; Nemotron thinking is disabled for customer-facing chat responses |
 
 Commands used for validation:
 
