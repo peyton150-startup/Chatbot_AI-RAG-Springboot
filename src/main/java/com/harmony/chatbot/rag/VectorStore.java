@@ -1,9 +1,5 @@
 package com.harmony.chatbot.rag;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,8 +14,10 @@ public class VectorStore {
      * speed-up since norms only need to be computed once at load time.
      */
     private record NormalizedPage(Page page, double norm) {}
+    private record ScoredPage(Page page, double score) {}
 
     private final List<NormalizedPage> normalizedPages;
+    private final int expectedDimensions;
 
     /**
      * Minimum cosine similarity a page must score to be included in results.
@@ -29,13 +27,13 @@ public class VectorStore {
      */
     public static final double MIN_SIMILARITY_THRESHOLD = 0.25;
 
-    public VectorStore(Page[] pagesArray) {
+    public VectorStore(Page[] pagesArray, int expectedDimensions) {
+        if (expectedDimensions <= 0) {
+            throw new IllegalArgumentException("Expected embedding dimensions must be positive");
+        }
+        this.expectedDimensions = expectedDimensions;
         List<Page> pages = pagesArray != null ? Arrays.asList(pagesArray) : Collections.emptyList();
         this.normalizedPages = preNormalize(pages);
-    }
-
-    public VectorStore(String pagesFile) {
-        this.normalizedPages = preNormalize(loadPagesFromFile(pagesFile));
     }
 
     /**
@@ -47,28 +45,18 @@ public class VectorStore {
         List<NormalizedPage> result = new ArrayList<>();
         for (Page page : pages) {
             double[] emb = page.getEmbedding();
-            if (emb == null || emb.length == 0) continue;
+            String pageId = page.getId() != null ? page.getId() : "<unknown>";
+            if (emb == null || emb.length != expectedDimensions) {
+                int actual = emb == null ? 0 : emb.length;
+                throw new IllegalArgumentException("Page " + pageId + " has " + actual
+                        + " embedding dimensions; expected " + expectedDimensions);
+            }
             double norm = computeNorm(emb);
             if (norm < 1e-10) continue; // skip zero vectors
             result.add(new NormalizedPage(page, norm));
         }
         System.out.println("VectorStore pre-normalized " + result.size() + " pages.");
         return result;
-    }
-
-    private List<Page> loadPagesFromFile(String pagesFile) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            List<Page> loadedPages = objectMapper.readValue(
-                    new File(pagesFile),
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, Page.class)
-            );
-            System.out.println("Loaded " + loadedPages.size() + " pages from " + pagesFile);
-            return loadedPages != null ? loadedPages : new ArrayList<>();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
     }
 
     /**
@@ -89,20 +77,22 @@ public class VectorStore {
         if (normalizedPages.isEmpty() || queryEmbedding == null || queryEmbedding.length == 0 || n <= 0) {
             return Collections.emptyList();
         }
+        if (queryEmbedding.length != expectedDimensions) {
+            throw new IllegalArgumentException("Query has " + queryEmbedding.length
+                    + " embedding dimensions; expected " + expectedDimensions);
+        }
 
         double queryNorm = computeNorm(queryEmbedding);
         if (queryNorm < 1e-10) return Collections.emptyList();
 
         return normalizedPages.stream()
-                .map(np -> {
-                    double score = dotProduct(queryEmbedding, np.page().getEmbedding())
-                                   / (queryNorm * np.norm() + 1e-10);
-                    return new double[]{ score, normalizedPages.indexOf(np) };
-                })
-                .filter(pair -> pair[0] >= MIN_SIMILARITY_THRESHOLD)
-                .sorted((a, b) -> Double.compare(b[0], a[0]))
+                .map(np -> new ScoredPage(np.page(),
+                        dotProduct(queryEmbedding, np.page().getEmbedding())
+                                / (queryNorm * np.norm() + 1e-10)))
+                .filter(scored -> scored.score() >= MIN_SIMILARITY_THRESHOLD)
+                .sorted((a, b) -> Double.compare(b.score(), a.score()))
                 .limit(n)
-                .map(pair -> normalizedPages.get((int) pair[1]).page())
+                .map(ScoredPage::page)
                 .collect(Collectors.toList());
     }
 
@@ -113,9 +103,8 @@ public class VectorStore {
     }
 
     private double dotProduct(double[] a, double[] b) {
-        int len = Math.min(a.length, b.length);
         double dot = 0.0;
-        for (int i = 0; i < len; i++) dot += a[i] * b[i];
+        for (int i = 0; i < expectedDimensions; i++) dot += a[i] * b[i];
         return dot;
     }
 

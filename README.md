@@ -1,15 +1,16 @@
 # Chatbot AI RAG (Spring Boot)
 
-A Spring Boot chatbot for a service business. It combines retrieval-augmented generation (RAG) with OpenAI, a PostgreSQL-backed admin area, lead capture, configurable branding, conversation history, ratings, and analytics.
+A Spring Boot chatbot for a service business. It combines retrieval-augmented generation (RAG) with NVIDIA Nemotron, a PostgreSQL-backed admin area, lead capture, configurable branding, conversation history, ratings, and analytics.
 
 > [!IMPORTANT]
-> The repository compiles, but the current `main` branch does **not** start successfully without code changes. See [Validation status](#validation-status) and [Known blockers](#known-blockers) before deploying it.
+> The NVIDIA API key is required at startup. The bundled vectors were generated with `nvidia/nemotron-3-embed-1b` and must not be mixed with embeddings from another model.
 
 ## Features
 
 - Public chatbot widget with a responsive chat window
 - RAG over a bundled `vectors.json` knowledge base
-- OpenAI embeddings (`text-embedding-3-large`) and chat completions (`gpt-4o-mini`)
+- NVIDIA query/passage embeddings (`nvidia/nemotron-3-embed-1b`)
+- NVIDIA answer generation (`nvidia/nemotron-3.5-lightning-30b-a3b`)
 - Three-turn conversation memory keyed by HTTP session
 - Lead capture with name, email, timestamp, and session ID
 - Per-user colors, avatar, banner, suggestions, and booking URL
@@ -30,9 +31,9 @@ Spring MVC + Spring Security
         |
         +--> PostgreSQL (users, themes, leads, chat logs, app settings)
         |
-        +--> VectorStore (89 bundled 3,072-dimensional embeddings)
+        +--> VectorStore (89 bundled 2,048-dimensional embeddings)
         |
-        +--> OpenAI embeddings + chat completions
+        +--> NVIDIA embeddings + Nemotron Lightning chat completions
 ```
 
 | Area | Main implementation |
@@ -54,7 +55,7 @@ Spring MVC + Spring Security
 - Spring MVC, Spring Security, Spring Data JPA, and Thymeleaf
 - PostgreSQL
 - Maven Wrapper 3.9.12
-- OpenAI Java client (`com.theokanning:openai-gpt3-java:0.11.0`)
+- NVIDIA OpenAI-compatible APIs through Java `HttpClient`
 - Bucket4j
 - Docker multi-stage build
 
@@ -62,7 +63,7 @@ Spring MVC + Spring Security
 
 - Java 17, or Docker Desktop
 - PostgreSQL
-- An OpenAI API key with access to the embedding and chat models
+- An NVIDIA API key with access to the embedding and chat models
 - Maven is optional because the Maven Wrapper is included
 
 ## Configuration
@@ -71,7 +72,7 @@ The application reads these environment variables:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | Yes for chat | Used for embeddings and chat completions |
+| `NVIDIA_API_KEY` | Yes | Bearer token used for embeddings and chat completions |
 | `DB_URL` | Yes | JDBC URL, for example `jdbc:postgresql://localhost:5432/chatbot` |
 | `DB_USER` | Yes | PostgreSQL username |
 | `DB_PASSWORD` | Yes | PostgreSQL password |
@@ -82,14 +83,16 @@ The application reads these environment variables:
 
 Set all three `BOOTSTRAP_ADMIN_*` variables together for the first startup, then remove them after the account has been created.
 
-> [!NOTE]
-> `src/main/resources/application-example.properties` currently shows `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. Those names do not match the application configuration. Use `DB_URL`, `DB_USER`, and `DB_PASSWORD` unless the source configuration is changed.
-
 Optional Spring overrides include:
 
 - `APP_CHAT_MAX_QUESTION_LENGTH` (default `2000`)
 - `APP_CHAT_RATE_LIMIT_PER_MINUTE` (default `20`)
 - `SPRING_JPA_HIBERNATE_DDL_AUTO`
+- `NVIDIA_BASE_URL` (default `https://integrate.api.nvidia.com/v1`)
+- `NVIDIA_CHAT_MODEL` (default `nvidia/nemotron-3.5-lightning-30b-a3b`)
+- `NVIDIA_EMBEDDING_MODEL` (default `nvidia/nemotron-3-embed-1b`)
+- `NVIDIA_EMBEDDING_DIMENSIONS` (default `2048`)
+- `NVIDIA_API_TIMEOUT` (default `120s`)
 
 ## Database setup
 
@@ -116,7 +119,7 @@ The JPA model expects these tables:
 In PowerShell:
 
 ```powershell
-$env:OPENAI_API_KEY = "your-key"
+$env:NVIDIA_API_KEY = (Get-Content -Raw "C:\secure\nvidia-key.txt").Trim()
 $env:DB_URL = "jdbc:postgresql://localhost:5432/chatbot"
 $env:DB_USER = "chatbot"
 $env:DB_PASSWORD = "replace-me"
@@ -130,7 +133,7 @@ $env:BOOTSTRAP_ADMIN_PASSWORD = "use-a-long-unique-password"
 
 On macOS or Linux, use `./mvnw spring-boot:run` and export the same variables.
 
-When the startup blocker is fixed, the application is intended to be available at:
+The application is then available at:
 
 - Chatbot: `http://localhost:8080/`
 - Login: `http://localhost:8080/login`
@@ -149,7 +152,7 @@ Run it against an existing PostgreSQL instance:
 
 ```bash
 docker run --rm -p 8080:8080 \
-  -e OPENAI_API_KEY=your-key \
+  -e NVIDIA_API_KEY \
   -e DB_URL=jdbc:postgresql://host.docker.internal:5432/chatbot \
   -e DB_USER=chatbot \
   -e DB_PASSWORD=replace-me \
@@ -161,6 +164,8 @@ docker run --rm -p 8080:8080 \
 ```
 
 The `SPRING_JPA_HIBERNATE_DDL_AUTO=update` setting above is for local evaluation only.
+
+Passing `-e NVIDIA_API_KEY` reads the value from the host environment without placing the key in the command or image.
 
 ## API overview
 
@@ -198,7 +203,7 @@ Expected response shape:
 
 ## Knowledge base
 
-`src/main/resources/vectors.json` is loaded at startup. The checked-in file contains 89 entries, each with a 3,072-value embedding compatible with `text-embedding-3-large`.
+`src/main/resources/vectors.json` is loaded at startup. The checked-in file contains 89 entries, each with a 2,048-value embedding generated by `nvidia/nemotron-3-embed-1b`.
 
 Each entry has this shape:
 
@@ -212,6 +217,22 @@ Each entry has this shape:
 ```
 
 The admin upload endpoint accepts a non-empty JSON array with the same `text` and `embedding` fields. Uploaded vectors are held in memory and are not written back to the repository or database, so they are lost on process restart.
+
+The vector store validates every uploaded or bundled vector. A file created by a different model or with a dimension other than 2,048 is rejected instead of being compared incorrectly.
+
+### Rebuild the vectors
+
+Set `NVIDIA_API_KEY`, then run the tested rebuild command from the repository root:
+
+```powershell
+$env:NVIDIA_API_KEY = (Get-Content -Raw "C:\secure\nvidia-key.txt").Trim()
+./mvnw.cmd -DskipTests compile exec:java `
+  "-Dexec.mainClass=com.harmony.chatbot.rag.VectorRebuildCommand" `
+  "-Dexec.args=src/main/resources/vectors.json src/main/resources/vectors.json"
+Remove-Item Env:NVIDIA_API_KEY
+```
+
+The command embeds page text with `input_type=passage`, processes bounded batches, writes a temporary file, and replaces the output only after every batch succeeds. At question time the application uses `input_type=query`, which is required for accurate retrieval.
 
 The separate `pages.json` file contains 49 raw page records using `slug`, `title`, and `content`. The running RAG service does not load this file.
 
@@ -232,50 +253,46 @@ This integration is currently blocked by the resource-path mismatch and missing 
 
 ## Validation status
 
-Validation performed against the checked-out `main` branch on September 21, 2026:
+Validation performed against the `codex/nvidia-rag` branch on September 21, 2026:
 
 | Check | Result |
 | --- | --- |
 | Repository inventory and source review | 53 project files inspected |
-| Vector JSON parsing | 89/89 entries parsed; all have text/source and 3,072-dimensional embeddings |
+| Vector JSON parsing | 89/89 entries parsed; all have text/source and 2,048-dimensional NVIDIA embeddings |
 | Raw page JSON parsing | 49 entries parsed |
 | Docker image build | Pass |
-| Java compilation | Pass: 37 source files compiled with Java 17 |
-| Automated tests | No test sources exist; Maven reports `No tests to run` |
-| Spring Boot startup with PostgreSQL | Fail |
-| Browser/API end-to-end flow | Blocked because application startup fails |
-| Live OpenAI response | Not attempted without a real API key and a running application |
+| Java compilation | Pass with Java 17 |
+| Automated tests | Pass: provider, vector store, RAG, rebuild, and Spring-construction tests |
+| NVIDIA embedding authentication | Pass; live endpoint returned 2,048 dimensions |
+| NVIDIA Lightning authentication | Pass; live endpoint returned chat content |
+| Spring Boot startup with PostgreSQL | Constructor regressions fixed and covered; final container rerun pending |
+| Browser/API end-to-end flow | Final container rerun pending |
 
 Commands used for validation:
 
 ```bash
-docker build --target build -t chatbot-ai-rag-check .
-docker run --rm chatbot-ai-rag-check mvn test -B
-docker build -t chatbot-ai-rag-runtime .
+docker build --target build -t chatbot-nvidia-build .
+docker run --rm chatbot-nvidia-build mvn test -B
+docker build -t chatbot-nvidia .
 ```
 
 For the runtime check, the application image was launched with PostgreSQL 16 and `SPRING_JPA_HIBERNATE_DDL_AUTO=update` to isolate application startup from the missing migration files.
 
 ## Known blockers
 
-1. **Application startup fails in `ChatRateLimiter`.** Spring reports `No default constructor found`. The component has two constructors, but neither constructor is explicitly selected for dependency injection. The application exits before accepting HTTP requests.
-2. **The embeddable script route points to a missing classpath resource.** `EmbedController` requests `static/chatbot-embed.js`, while the repository contains `static/css/chatbotEmbed.js`.
-3. **Cross-site embedding is not configured.** The widget calls the chatbot server from the host page, but no CORS configuration permits those cross-origin API requests.
-4. **A fresh database has no supported initialization path.** `ddl-auto=validate` requires an existing schema, but no migrations or schema script are committed.
-5. **The example database variable names are incorrect.** The example uses `DATABASE_*`; the application reads `DB_*`.
-6. **Editing a user without entering a new password can re-hash the existing BCrypt hash.** `UserService.saveUser` encodes any non-blank password, including a hash already loaded from the database.
-7. **There is no automated test suite.** Maven compiles the project successfully but runs zero tests.
+1. **The embeddable script route points to a missing classpath resource.** `EmbedController` requests `static/chatbot-embed.js`, while the repository contains `static/css/chatbotEmbed.js`.
+2. **Cross-site embedding is not configured.** The widget calls the chatbot server from the host page, but no CORS configuration permits those cross-origin API requests.
+3. **A fresh database has no production migration path.** `ddl-auto=validate` requires an existing schema, but no migrations or schema script are committed. Use `update` only for local evaluation.
+4. **Editing a user without entering a new password can re-hash the existing BCrypt hash.** `UserService.saveUser` encodes any non-blank password, including a hash already loaded from the database.
 
 Additional security review is recommended before production use. In particular, public theme responses currently serialize the associated user object, the public rating endpoint accepts any existing log ID, uploaded vector files are only spot-checked, and the in-memory per-IP rate-limit maps do not evict old entries.
 
 ## Suggested repair order
 
-1. Select the intended Spring constructor in `ChatRateLimiter` and add a context-startup test.
-2. Add database migrations and keep production on `ddl-auto=validate`.
-3. Align the embedded script filename/path and configure an explicit CORS allowlist.
-4. Correct `application-example.properties`.
-5. Fix password update semantics and add service/controller tests.
-6. Add integration tests covering login, admin authorization, lead capture, theme loading, chat logging, ratings, and RAG failure handling.
+1. Add database migrations and keep production on `ddl-auto=validate`.
+2. Align the embedded script filename/path and configure an explicit CORS allowlist.
+3. Fix password update semantics and add service/controller tests.
+4. Add integration tests covering login, admin authorization, lead capture, theme loading, chat logging, ratings, and RAG failure handling.
 
 ## Project layout
 
@@ -287,6 +304,7 @@ Additional security review is recommended before production use. In particular, 
 └── src/main
     ├── java/com/harmony/chatbot
     │   ├── admin
+    │   ├── ai
     │   ├── analytics
     │   ├── chat
     │   ├── config
@@ -301,6 +319,10 @@ Additional security review is recommended before production use. In particular, 
         ├── vectors.json
         ├── static
         └── templates
+└── src/test/java/com/harmony/chatbot
+    ├── ai
+    ├── chat
+    └── rag
 ```
 
 ## License

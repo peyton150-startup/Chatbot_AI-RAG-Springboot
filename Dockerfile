@@ -14,10 +14,9 @@ RUN mvn dependency:go-offline -B
 # Step 3: Copy the full source code
 COPY src ./src
 
-# Step 4: Build the project
-# Add memory options for large builds
+# Step 4: Test and build the project
 ENV MAVEN_OPTS="-Xmx1024m" 
-RUN mvn clean install -B -DskipTests -X
+RUN mvn clean verify -B -X
 
 # -----------------------------
 # Runtime stage

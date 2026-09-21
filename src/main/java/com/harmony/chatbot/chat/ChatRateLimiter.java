@@ -1,5 +1,6 @@
 package com.harmony.chatbot.chat;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,7 @@ public class ChatRateLimiter {
     private final Clock clock;
     private final ConcurrentHashMap<String, Window> windows = new ConcurrentHashMap<>();
 
+    @Autowired
     public ChatRateLimiter(@Value("${app.chat.rate-limit-per-minute:20}") int limitPerMinute) {
         this(limitPerMinute, Clock.systemUTC());
     }

@@ -1,16 +1,16 @@
 package com.harmony.chatbot.rag;
 
+import com.harmony.chatbot.ai.AiClient;
+import com.harmony.chatbot.ai.AiMessage;
+import com.harmony.chatbot.ai.NvidiaAiProperties;
 import com.harmony.chatbot.analytics.ChatLogRepository;
 import com.harmony.chatbot.analytics.ChatLogEntity;
-import com.theokanning.openai.OpenAiService;
-import com.theokanning.openai.embedding.Embedding;
-import com.theokanning.openai.embedding.EmbeddingRequest;
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -19,8 +19,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class RAGService {
+    private static final Logger log = LoggerFactory.getLogger(RAGService.class);
 
-    private final OpenAiService service;
+    private final AiClient aiClient;
+    private final ChatLogRepository chatLogRepository;
+    private final int embeddingDimensions;
     private volatile VectorStore vectorStore; // volatile so hot-reload is visible across threads
 
     /**
@@ -40,15 +43,27 @@ public class RAGService {
     private static final String LANG_PREFIX = "[Respond in language: ";
 
     @Autowired
-    private ChatLogRepository chatLogRepository;
+    public RAGService(AiClient aiClient,
+                      ChatLogRepository chatLogRepository,
+                      ObjectMapper objectMapper,
+                      NvidiaAiProperties properties) {
+        this(aiClient, chatLogRepository, loadPages(objectMapper), properties.getEmbeddingDimensions());
+    }
 
-    public RAGService() {
-        this.service = new OpenAiService(System.getenv("OPENAI_API_KEY"));
+    RAGService(AiClient aiClient,
+               ChatLogRepository chatLogRepository,
+               Page[] pages,
+               int embeddingDimensions) {
+        this.aiClient = aiClient;
+        this.chatLogRepository = chatLogRepository;
+        this.embeddingDimensions = embeddingDimensions;
+        this.vectorStore = new VectorStore(pages, embeddingDimensions);
+        System.out.println("VectorStore loaded with " + pages.length + " pages.");
+    }
+
+    private static Page[] loadPages(ObjectMapper objectMapper) {
         try (InputStream is = new ClassPathResource("vectors.json").getInputStream()) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            Page[] pages = objectMapper.readValue(is, Page[].class);
-            this.vectorStore = new VectorStore(pages);
-            System.out.println("VectorStore loaded with " + pages.length + " pages.");
+            return objectMapper.readValue(is, Page[].class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to load vectors.json", e);
         }
@@ -59,7 +74,7 @@ public class RAGService {
      * Marked synchronized to prevent concurrent reloads causing inconsistency.
      */
     public synchronized void reloadVectorStore(Page[] pages) {
-        this.vectorStore = new VectorStore(pages);
+        this.vectorStore = new VectorStore(pages, embeddingDimensions);
         System.out.println("VectorStore hot-reloaded with " + pages.length + " pages.");
     }
 
@@ -87,16 +102,7 @@ public class RAGService {
             }
 
             // 2. Embed only the clean question (no language noise)
-            List<Embedding> qEmb = service.createEmbeddings(
-                    EmbeddingRequest.builder()
-                            .model("text-embedding-3-large")
-                            .input(List.of(question))
-                            .build()
-            ).getData();
-
-            double[] qVector = qEmb.get(0).getEmbedding().stream()
-                    .mapToDouble(Double::doubleValue)
-                    .toArray();
+            double[] qVector = aiClient.embedQuery(question);
 
             // 3. Retrieve top context pages — only those above similarity threshold
             List<Page> topPages = vectorStore.getTopNPages(qVector, TOP_N);
@@ -150,8 +156,8 @@ public class RAGService {
             }
 
             // 6. Build message list, including conversation history for memory
-            List<ChatMessage> messages = new ArrayList<>();
-            messages.add(new ChatMessage("system", systemPrompt));
+            List<AiMessage> messages = new ArrayList<>();
+            messages.add(new AiMessage("system", systemPrompt));
 
             // Inject recent conversation turns so the bot remembers context
             if (sessionId != null && !sessionId.isBlank()) {
@@ -167,31 +173,22 @@ public class RAGService {
                         int cb = prevQ.indexOf(']');
                         if (cb > 0) prevQ = prevQ.substring(cb + 1).trim();
                     }
-                    messages.add(new ChatMessage("user",      prevQ));
-                    messages.add(new ChatMessage("assistant", prev.getAnswer() != null ? prev.getAnswer() : ""));
+                    messages.add(new AiMessage("user", prevQ));
+                    messages.add(new AiMessage("assistant", prev.getAnswer() != null ? prev.getAnswer() : ""));
                 }
             }
 
             // Current user message
-            messages.add(new ChatMessage("user", question));
-
-            // 7. Call the model
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                    .model("gpt-4o-mini")
-                    .messages(messages)
-                    .build();
+            messages.add(new AiMessage("user", question));
 
             System.out.println("Question: " + question + (langCode != null ? " [lang=" + langCode + "]" : ""));
             System.out.println("Context pages found: " + topPages.size()
                     + (topPages.isEmpty() ? " (below threshold — fallback prompt used)" : ""));
 
-            return service.createChatCompletion(request)
-                    .getChoices().get(0)
-                    .getMessage()
-                    .getContent();
+            return aiClient.chat(messages);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("RAG answer generation failed: {}", e.getMessage());
             return "Error retrieving answer.";
         }
     }
